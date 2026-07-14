@@ -1,0 +1,1557 @@
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\container.ts ---
+
+// reflect-metadata DEVE essere il primo import assoluto per far funzionare Tsyringe
+import "reflect-metadata";
+import { container } from "tsyringe";
+
+import { UtenteRepository } from "./adapters/repositories/UtenteRepository";
+import { PazienteRepository } from "./adapters/repositories/PazienteRepository";
+import { MedicoRepository } from "./adapters/repositories/MedicoRepository";
+import { RefertoRepository } from "./adapters/repositories/RefertoRepository";
+import { AuditLogRepository } from "./adapters/repositories/AuditLogRepository";
+import { BcryptPasswordHasher } from "./frameworks/security/BcryptPasswordHasher";
+import { CryptoUuidGenerator } from "./frameworks/utils/CryptoUuidGenerator";
+import { JwtTokenManager } from "./frameworks/security/JwtTokenManager";
+
+// Registriamo i Token: diciamo a Tsyringe "Quando qualcuno chiede l'interfaccia X, dagli il Singleton Y"
+container.registerSingleton("IUtenteRepository", UtenteRepository);
+container.registerSingleton("IPazienteRepository", PazienteRepository);
+container.registerSingleton("IMedicoRepository", MedicoRepository);
+container.registerSingleton("IRefertoRepository", RefertoRepository);
+container.registerSingleton("IAuditLogRepository", AuditLogRepository);
+container.registerSingleton("IPasswordHasher", BcryptPasswordHasher);
+container.registerSingleton("IUuidGenerator", CryptoUuidGenerator);
+container.registerSingleton("ITokenManager", JwtTokenManager);
+
+// Esportiamo il container configurato
+export { container };
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\test-flusso.ts ---
+
+import { inizializzaDatabase } from "./frameworks/database/database";
+import { UtenteRepository } from "./adapters/repositories/UtenteRepository";
+import { PazienteRepository } from "./adapters/repositories/PazienteRepository";
+import { AuditLogRepository } from "./adapters/repositories/AuditLogRepository";
+import { BcryptPasswordHasher } from "./frameworks/security/BcryptPasswordHasher";
+import { CryptoUuidGenerator } from "./frameworks/utils/CryptoUuidGenerator";
+import { JwtTokenManager } from "./frameworks/security/JwtTokenManager";
+
+import { RegistrazionePazienteUseCase } from "./use_cases/RegistrazionePaziente";
+import { LoginUseCase } from "./use_cases/Login";
+
+async function eseguiTest() {
+  console.log("⏳ 1. Connessione e sincronizzazione database...");
+  await inizializzaDatabase();
+
+  console.log(
+    "🔨 2. Creazione delle dipendenze (Repositories, Security, Utils)...",
+  );
+  const utenteRepo = new UtenteRepository();
+  const pazienteRepo = new PazienteRepository();
+  const auditLogRepo = new AuditLogRepository();
+  const passwordHasher = new BcryptPasswordHasher();
+  const uuidGenerator = new CryptoUuidGenerator();
+  const tokenManager = new JwtTokenManager();
+
+  console.log("⚙️ 3. Iniezione delle dipendenze nei Casi d'Uso...");
+  // Qui passiamo le classi concrete che abbiamo appena creato al Caso d'Uso
+  const registrazioneUseCase = new RegistrazionePazienteUseCase(
+    utenteRepo,
+    pazienteRepo,
+    auditLogRepo,
+    passwordHasher,
+    uuidGenerator,
+  );
+
+  const loginUseCase = new LoginUseCase(
+    utenteRepo,
+    passwordHasher,
+    tokenManager,
+  );
+
+  // Usiamo Date.now() nell'email per renderla univoca a ogni avvio del test,
+  // così non ci darà l'errore "Email già in uso" se lo lanci due volte di fila
+  const emailTest = `mario.rossi.${Date.now()}@email.it`;
+  const passwordTest = "PasswordSicura123!";
+  const codiceFiscaleTest = `RSSMRA${Date.now().toString().slice(-10)}`;
+  try {
+    console.log(`\n📝 --- TEST REGISTRAZIONE ---`);
+    console.log(`Provo a registrare l'utente: ${emailTest}`);
+
+    const nuovoUtente = await registrazioneUseCase.execute({
+      nome: "Mario",
+      cognome: "Rossi",
+      email: emailTest,
+      passwordInChiaro: passwordTest,
+      codiceFiscale: codiceFiscaleTest, // <--- Sostituisci la stringa fissa con la variabile
+      dataNascita: new Date("1980-05-15"),
+      ipAddress: "192.168.1.55",
+    });
+    console.log("✅ Registrazione completata con successo!");
+    console.log(`   -> Nuovo ID Utente generato: ${nuovoUtente.id}`);
+
+    console.log(`\n🔐 --- TEST LOGIN ---`);
+    console.log("Provo ad effettuare il login con le stesse credenziali...");
+
+    const token = await loginUseCase.execute({
+      email: emailTest,
+      passwordInChiaro: passwordTest,
+    });
+
+    console.log("✅ Login completato! Token JWT rilasciato:");
+    console.log(`   -> ${token}\n`);
+
+    console.log(
+      "🎉 TUTTI I TEST SONO PASSATI! L'architettura funziona perfettamente.",
+    );
+  } catch (error) {
+    console.error("\n❌ ERRORE DURANTE IL TEST:");
+    // Stampiamo il messaggio d'errore lanciato dal Caso d'Uso
+    if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(error);
+    }
+  } finally {
+    // Chiudiamo il processo node alla fine
+    process.exit(0);
+  }
+}
+
+eseguiTest();
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\adapters\controllers\AdminController.ts ---
+
+import { Request, Response } from "express";
+import { injectable } from "tsyringe";
+import { CreaMedicoUseCase } from "../../use_cases/CreaMedico";
+
+@injectable()
+export class AdminController {
+  constructor(private creaMedicoUseCase: CreaMedicoUseCase) {}
+
+  public creaMedico = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const {
+        adminId,
+        nome,
+        cognome,
+        email,
+        password,
+        specializzazione,
+        numeroMatricola,
+      } = req.body;
+      const ipAddress = req.ip || "0.0.0.0";
+
+      const nuovoMedico = await this.creaMedicoUseCase.execute({
+        adminId,
+        nome,
+        cognome,
+        email,
+        passwordInChiaro: password,
+        specializzazione,
+        numeroMatricola,
+        ipAddress,
+      });
+
+      res.status(201).json({
+        messaggio: "Account Medico creato con successo",
+        medicoId: nuovoMedico.id,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        res.status(400).json({ errore: error.message });
+      } else {
+        res.status(500).json({ errore: "Errore interno del server" });
+      }
+    }
+  };
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\adapters\controllers\AuthController.ts ---
+
+import { Request, Response } from "express";
+import { RegistrazionePazienteUseCase } from "../../use_cases/RegistrazionePaziente";
+import { injectable } from "tsyringe";
+import { LoginUseCase } from "../../use_cases/Login";
+
+@injectable()
+export class AuthController {
+  // Il controller riceve il caso d'uso già "assemblato" tramite il costruttore
+  constructor(
+    private registrazioneUseCase: RegistrazionePazienteUseCase,
+    private loginUseCase: LoginUseCase,
+  ) {}
+
+  // Usiamo una arrow function per non perdere il riferimento a "this" quando Express chiamerà questa rotta
+  public registraPaziente = async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
+    try {
+      // 1. Estraiamo i dati crudi inviati dal client nel body della richiesta
+      const { nome, cognome, email, password, codiceFiscale, dataNascita } =
+        req.body;
+
+      // 2. Estraiamo l'IP di chi fa la richiesta (Express lo mette in req.ip)
+      // Se req.ip è undefined per qualche motivo, mettiamo un fallback a '0.0.0.0'
+      const ipAddress = req.ip || "0.0.0.0";
+
+      // 3. Traduciamo la richiesta HTTP in una chiamata al nostro strato interno
+      const nuovoUtente = await this.registrazioneUseCase.execute({
+        nome,
+        cognome,
+        email,
+        passwordInChiaro: password, // Mappiamo il campo 'password' del JSON con quello che si aspetta il nostro input
+        codiceFiscale,
+        dataNascita: new Date(dataNascita), // Convertiamo la stringa "YYYY-MM-DD" in un oggetto Date reale
+        ipAddress,
+      });
+
+      // 4. Se tutto va a buon fine, rispondiamo con lo status 201 (Created)
+      res.status(201).json({
+        messaggio: "Paziente registrato con successo",
+        utenteId: nuovoUtente.id,
+      });
+    } catch (error) {
+      // 5. Gestione degli errori (es. "Email già in uso" o "Codice fiscale duplicato")
+      if (error instanceof Error) {
+        // Errore logico previsto dal nostro Caso d'Uso
+        res.status(400).json({ errore: error.message });
+      } else {
+        // Errore generico o di sistema
+        res.status(500).json({ errore: "Errore interno del server" });
+      }
+    }
+  };
+
+  public login = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // 1. Estraiamo i dati dal client
+      const { email, password } = req.body;
+
+      // 2. Chiamiamo il Caso d'Uso
+      const token = await this.loginUseCase.execute({
+        email,
+        passwordInChiaro: password,
+      });
+
+      // 3. Rispondiamo con il Token JWT (Status 200 OK)
+      res.status(200).json({
+        messaggio: "Login effettuato con successo",
+        token: token,
+      });
+    } catch (error) {
+      // 4. Gestione errori
+      if (error instanceof Error) {
+        // Se le credenziali sono errate, il login fallisce con un 401 Unauthorized
+        res.status(401).json({ errore: error.message });
+      } else {
+        res.status(500).json({ errore: "Errore interno del server" });
+      }
+    }
+  };
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\adapters\controllers\RefertiController.ts ---
+
+import { Request, Response } from "express";
+import { injectable } from "tsyringe";
+import { UploadRefertoUseCase } from "../../use_cases/UploadReferto";
+import { DownloadRefertoUseCase } from "../../use_cases/DownloadReferto";
+
+@injectable()
+export class RefertiController {
+  constructor(
+    private uploadRefertoUseCase: UploadRefertoUseCase,
+    private downloadRefertoUseCase: DownloadRefertoUseCase,
+  ) {}
+
+  public upload = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Nota: in futuro utenteId lo prenderemo dal Token JWT (req.user.id)
+      const { utenteId, pazienteId, percorsoFile, categoria } = req.body;
+      const ipAddress = req.ip || "0.0.0.0";
+
+      const nuovoReferto = await this.uploadRefertoUseCase.execute({
+        utenteId,
+        pazienteId,
+        percorsoFile,
+        categoria,
+        ipAddress,
+      });
+
+      res.status(201).json({
+        messaggio: "Referto caricato con successo",
+        referto: nuovoReferto,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        res.status(403).json({ errore: error.message });
+      } else {
+        res.status(500).json({ errore: "Errore interno del server" });
+      }
+    }
+  };
+
+  public download = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const refertoId = req.params.id as string; // Lo prendiamo dall'URL: /api/referti/:id/download
+      const { utenteId } = req.body; // Anche questo in futuro verrà dal Token JWT
+      const ipAddress = req.ip || "0.0.0.0";
+
+      const percorsoFile = await this.downloadRefertoUseCase.execute({
+        utenteId,
+        refertoId,
+        ipAddress,
+      });
+
+      // Se tutto va bene, Express invia fisicamente il file al client
+      res.download(percorsoFile);
+    } catch (error) {
+      if (error instanceof Error) {
+        res.status(403).json({ errore: error.message });
+      } else {
+        res.status(500).json({ errore: "Errore interno del server" });
+      }
+    }
+  };
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\adapters\repositories\AuditLogRepository.ts ---
+
+import { AuditLog } from "../../entities/AuditLog";
+import { AuditLogModel } from "../../frameworks/database/models/AuditLogModel";
+import { IAuditLogRepository } from "../../use_cases/RegistrazionePaziente";
+
+export class AuditLogRepository implements IAuditLogRepository {
+  public async salva(log: AuditLog): Promise<void> {
+    await AuditLogModel.create({
+      id: log.id,
+      utenteId: log.utenteId,
+      tipoAzione: log.tipoAzione,
+      ipAddress: log.ipAddress,
+      refertoId: log.refertoId,
+      timestamp: log.timestamp,
+    });
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\adapters\repositories\MedicoRepository.ts ---
+
+import { Medico } from "../../entities/Medico";
+import { MedicoModel } from "../../frameworks/database/models/MedicoModel";
+import { IMedicoRepository } from "../../use_cases/CreaMedico";
+
+export class MedicoRepository implements IMedicoRepository {
+  // Salva l'entità Medico nel database
+  public async salva(medico: Medico): Promise<void> {
+    await MedicoModel.create({
+      id: medico.id,
+      utenteId: medico.utenteId, // Ricorda di controllare che nella tua entità si chiami utenteId
+      numeroMatricola: medico.numeroMatricola,
+      specializzazione: medico.specializzazione,
+    });
+  }
+
+  // Ricerca un medico dal suo ID Utente (utile per il login del medico)
+  public async findByUtenteId(utenteId: string): Promise<Medico | null> {
+    const medicoDb = await MedicoModel.findOne({ where: { utenteId } });
+
+    if (!medicoDb) {
+      return null;
+    }
+
+    return new Medico(
+      medicoDb.id as string,
+      medicoDb.utenteId as string, // Lo passiamo all'entità come utenteId
+      medicoDb.numeroMatricola as string,
+      medicoDb.specializzazione as string,
+    );
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\adapters\repositories\PazienteRepository.ts ---
+
+import { Paziente } from "../../entities/Paziente";
+import { PazienteModel } from "../../frameworks/database/models/PazienteModel";
+import { IPazienteRepository } from "../../use_cases/RegistrazionePaziente";
+
+export class PazienteRepository implements IPazienteRepository {
+  // Salva l'entità Paziente nel database usando Sequelize
+  public async salva(paziente: Paziente): Promise<void> {
+    await PazienteModel.create({
+      id: paziente.id,
+      utenteId: paziente.utenteId,
+      codiceFiscale: paziente.codiceFiscale,
+      dataNascita: paziente.dataNascita,
+    });
+  }
+
+  // Ricerca un paziente dal suo ID Utente
+  public async findByUtenteId(utenteId: string): Promise<Paziente | null> {
+    const pazienteDb = await PazienteModel.findOne({ where: { utenteId } });
+
+    if (!pazienteDb) {
+      return null;
+    }
+
+    return new Paziente(
+      pazienteDb.id as string,
+      pazienteDb.utenteId as string, // Questo diventa l'utenteId richiesto dal costruttore
+      pazienteDb.codiceFiscale as string,
+      pazienteDb.dataNascita as Date,
+    );
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\adapters\repositories\RefertoRepository.ts ---
+
+import { Referto } from "../../entities/Referto";
+import { RefertoModel } from "../../frameworks/database/models/RefertoModel";
+import { IRefertoRepository as IUploadRefertoRepository } from "../../use_cases/UploadReferto";
+import { IRefertoRepository as IDownloadRefertoRepository } from "../../use_cases/DownloadReferto";
+
+// Questa classe soddisfa i requisiti sia del caso d'uso di Upload che di quello di Download
+export class RefertoRepository
+  implements IUploadRefertoRepository, IDownloadRefertoRepository
+{
+  // Salva il referto nel database (usato in UploadReferto)
+  public async salva(referto: Referto): Promise<void> {
+    await RefertoModel.create({
+      id: referto.id,
+      medicoId: referto.medicoId,
+      pazienteId: referto.pazienteId,
+      percorsoFile: referto.percorsoFile,
+      categoria: referto.categoria,
+      dataCaricamento: referto.dataCaricamento,
+    });
+  }
+
+  // Cerca un referto tramite il suo ID (usato in DownloadReferto)
+  public async findById(id: string): Promise<Referto | null> {
+    const refertoDb = await RefertoModel.findByPk(id);
+
+    if (!refertoDb) {
+      return null;
+    }
+
+    // Traduciamo il modello del DB nell'Entità pura Referto
+    return new Referto(
+      refertoDb.id as string,
+      refertoDb.medicoId as string,
+      refertoDb.pazienteId as string,
+      refertoDb.percorsoFile as string,
+      refertoDb.categoria as string,
+      refertoDb.dataCaricamento as Date,
+    );
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\adapters\repositories\UtenteRepository.ts ---
+
+import { Medico } from "../../entities/Medico";
+import { Paziente } from "../../entities/Paziente";
+import { Utente, RuoloUtente } from "../../entities/Utente";
+import { MedicoModel } from "../../frameworks/database/models/MedicoModel";
+import { PazienteModel } from "../../frameworks/database/models/PazienteModel";
+import { UtenteModel } from "../../frameworks/database/models/UtenteModel";
+import { IUtenteRepository } from "../../use_cases/CreaMedico";
+
+export class UtenteRepository implements IUtenteRepository {
+  // Controlla se un'email è già registrata (usato sia da Paziente che da Medico)
+  public async esisteEmail(email: string): Promise<boolean> {
+    const count = await UtenteModel.count({ where: { email } });
+    return count > 0;
+  }
+
+  // Salva l'entità pura nel database usando Sequelize
+  public async salva(utente: Utente): Promise<void> {
+    await UtenteModel.create({
+      id: utente.id,
+      nome: utente.nome,
+      cognome: utente.cognome,
+      email: utente.email,
+      passwordHash: utente.passwordHash,
+      ruolo: utente.ruolo,
+      attivo: utente.attivo,
+    });
+  }
+
+  // Cerca un utente per ID (serve al CreaMedicoUseCase per verificare se chi crea è un ADMIN)
+  public async findById(id: string): Promise<Utente | null> {
+    const utenteDb = await UtenteModel.findByPk(id);
+
+    if (!utenteDb) {
+      return null;
+    }
+
+    // Se lo trova nel DB, lo "traduce" di nuovo nell'Entità pura per i Casi d'Uso
+    return new Utente(
+      utenteDb.id as string,
+      utenteDb.nome as string,
+      utenteDb.cognome as string,
+      utenteDb.email as string,
+      utenteDb.passwordHash as string,
+      utenteDb.ruolo as RuoloUtente,
+      utenteDb.attivo as boolean,
+    );
+  }
+
+  // Serve al LoginUseCase per trovare l'utente dalla sua email
+  public async findByEmail(email: string): Promise<Utente | null> {
+    const utenteDb = await UtenteModel.findOne({ where: { email } });
+    if (!utenteDb) return null;
+
+    return new Utente(
+      utenteDb.id as string,
+      utenteDb.nome as string,
+      utenteDb.cognome as string,
+      utenteDb.email as string,
+      utenteDb.passwordHash as string,
+      utenteDb.ruolo as RuoloUtente,
+      utenteDb.attivo as boolean,
+    );
+  }
+
+  // Serve a Upload/Download Referto per avere l'Utente con il suo profilo Medico o Paziente allegato
+  public async findByIdConProfilo(id: string): Promise<Utente | null> {
+    const utente = await this.findById(id);
+    if (!utente) return null;
+
+    // Se è medico, andiamo a pescargli il profilo medico
+    if (utente.ruolo === RuoloUtente.MEDICO) {
+      const medicoDb = await MedicoModel.findOne({
+        where: { utenteId: utente.id },
+      });
+      if (medicoDb) {
+        utente.profiloMedico = new Medico(
+          medicoDb.id as string,
+          medicoDb.utenteId as string,
+          medicoDb.specializzazione as string,
+          medicoDb.numeroMatricola as string,
+        );
+      }
+    }
+
+    // Se è paziente, andiamo a pescargli il profilo paziente
+    if (utente.ruolo === RuoloUtente.PAZIENTE) {
+      const pazienteDb = await PazienteModel.findOne({
+        where: { utenteId: utente.id },
+      });
+      if (pazienteDb) {
+        utente.profiloPaziente = new Paziente(
+          pazienteDb.id as string,
+          pazienteDb.utenteId as string,
+          pazienteDb.codiceFiscale as string,
+          pazienteDb.dataNascita as Date,
+        );
+      }
+    }
+
+    return utente;
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\entities\AuditLog.ts ---
+
+// Creiamo un Enum per bloccare rigidamente le azioni possibili (evita errori di battitura nel DB)
+export enum TipoAzione {
+  REGISTRAZIONE_UTENTE = "REGISTRAZIONE_UTENTE",
+  LOGIN_EFFETTUATO = "LOGIN_EFFETTUATO",
+  LOGIN_FALLITO = "LOGIN_FALLITO",
+  UPLOAD_REFERTO = "UPLOAD_REFERTO",
+  DOWNLOAD_REFERTO = "DOWNLOAD_REFERTO",
+  ACCESSO_NEGATO = "ACCESSO_NEGATO",
+}
+
+export class AuditLog {
+  constructor(
+    public readonly id: string,
+    public readonly utenteId: string, // Chi ha fatto l'azione (il login)
+    public readonly tipoAzione: TipoAzione,
+    public readonly ipAddress: string, // Tracciamo l'indirizzo IP per la compliance ISO/GDPR,
+    // è la stringa che rappresenta l'indirizzo IP pubblico del dispositivo che sta effettuando l'operazione
+
+    public readonly refertoId: string | null = null,
+
+    public readonly timestamp: Date = new Date(),
+  ) {}
+
+  // Questa classe NON ha metodi per modificare i dati.
+  // Una volta istanziato, un log non può MAI essere alterato.
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\entities\Medico.ts ---
+
+export class Medico {
+  constructor(
+    public readonly id: string,
+    public readonly utenteId: string,
+    public specializzazione: string,
+    public numeroMatricola: string,
+  ) {}
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\entities\Paziente.ts ---
+
+export class Paziente {
+  constructor(
+    public readonly id: string, // La chiave primaria del paziente
+    public readonly utenteId: string, // Il collegamento (chiave esterna logica) all'Utente padre
+    public codiceFiscale: string,
+    public dataNascita: Date,
+  ) {}
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\entities\Referto.ts ---
+
+export class Referto {
+  constructor(
+    public readonly id: string, // Chiave primaria del referto
+    public readonly medicoId: string, // FK che punta a Medico
+    public readonly pazienteId: string, // FK che punta a Paziente
+    public percorsoFile: string, // Dove è salvato fisicamente il PDF sul server
+    public categoria: string, // Es. "Esame del sangue", "Radiografia" (visto dal tuo schema)
+    public readonly dataCaricamento: Date = new Date(),
+  ) {}
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\entities\Utente.ts ---
+
+import { Medico } from "./Medico";
+import { Paziente } from "./Paziente";
+
+export enum RuoloUtente {
+  ADMIN = "ADMIN",
+  MEDICO = "MEDICO",
+  PAZIENTE = "PAZIENTE",
+}
+
+export class Utente {
+  public profiloMedico?: Medico;
+  public profiloPaziente?: Paziente;
+  constructor(
+    public readonly id: string,
+    public nome: string, // Aggiunto in base allo schema
+    public cognome: string, // Aggiunto in base allo schema
+    public email: string,
+    public passwordHash: string,
+    public ruolo: RuoloUtente,
+    public attivo: boolean = true,
+    public readonly createdAt: Date = new Date(), // Aggiunto in base allo schema
+  ) {}
+
+  public disabilitaAccount(): void {
+    this.attivo = false;
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\database\database.ts ---
+
+import { Sequelize } from "sequelize";
+import { UtenteModel } from "../database/models/UtenteModel";
+import { PazienteModel } from "../database/models/PazienteModel";
+import { MedicoModel } from "../database/models/MedicoModel";
+
+// Creiamo la connessione (usando Postgres invece di SQLite per via dei requisiti medici)
+export const database = new Sequelize(
+  "nome_db_medico",
+  "postgres",
+  "postgres",
+  {
+    host: "localhost",
+    dialect: "postgres",
+    logging: false,
+  },
+);
+
+export async function inizializzaDatabase() {
+  try {
+    await database.authenticate();
+    console.log("📦 Connessione a PostgreSQL stabilita.");
+
+    // Sincronizza i modelli alterando le tabelle se necessario
+    await database.sync({ alter: true });
+    console.log("🔄 Tabelle del database sincronizzate con successo.");
+  } catch (error) {
+    console.error("❌ Impossibile connettersi al database:", error);
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\database\models\AuditLogModel.ts ---
+
+import { DataTypes, Model } from "sequelize";
+import { database } from "../database";
+
+export class AuditLogModel extends Model {
+  declare id: string;
+  declare utenteId: string;
+  declare tipoAzione: string;
+  declare ipAddress: string;
+  declare refertoId: string | null;
+  declare timestamp: Date;
+}
+
+AuditLogModel.init(
+  {
+    id: { type: DataTypes.UUID, primaryKey: true },
+    utenteId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: "utenti",
+        key: "id",
+      },
+    },
+    tipoAzione: { type: DataTypes.STRING, allowNull: false },
+    ipAddress: { type: DataTypes.STRING, allowNull: false },
+
+    refertoId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: "referti",
+        key: "id",
+      },
+    },
+
+    timestamp: { type: DataTypes.DATE, allowNull: false },
+  },
+  {
+    sequelize: database,
+    modelName: "AuditLog",
+    tableName: "audit_logs",
+    timestamps: false,
+  },
+);
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\database\models\MedicoModel.ts ---
+
+import { DataTypes, Model } from "sequelize";
+import { database } from "../database";
+
+export class MedicoModel extends Model {
+  declare id: string;
+  declare utenteId: string;
+  declare numeroMatricola: string;
+  declare specializzazione: string;
+}
+
+MedicoModel.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+    },
+    utenteId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: "utenti",
+        key: "id",
+      },
+    },
+    numeroMatricola: { type: DataTypes.STRING, allowNull: false, unique: true },
+    specializzazione: { type: DataTypes.STRING, allowNull: false },
+  },
+  {
+    sequelize: database,
+    modelName: "Medico",
+    tableName: "medici",
+    timestamps: true,
+    updatedAt: false,
+  },
+);
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\database\models\PazienteModel.ts ---
+
+import { DataTypes, Model } from "sequelize";
+import { database } from "../database";
+
+export class PazienteModel extends Model {
+  declare id: string;
+  declare utenteId: string;
+  declare codiceFiscale: string;
+  declare dataNascita: Date;
+}
+
+PazienteModel.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+    },
+    utenteId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: "utenti", // Si collega alla tabella utenti
+        key: "id",
+      },
+    },
+    codiceFiscale: { type: DataTypes.STRING, allowNull: false, unique: true },
+    dataNascita: { type: DataTypes.DATEONLY, allowNull: false },
+  },
+  {
+    sequelize: database,
+    modelName: "Paziente",
+    tableName: "pazienti",
+    timestamps: true,
+    updatedAt: false,
+  },
+);
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\database\models\RefertoModel.ts ---
+
+import { DataTypes, Model } from "sequelize";
+import { database } from "../database";
+
+export class RefertoModel extends Model {
+  declare id: string;
+  declare medicoId: string;
+  declare pazienteId: string;
+  declare percorsoFile: string;
+  declare categoria: string;
+  declare dataCaricamento: Date;
+}
+
+RefertoModel.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+    },
+    medicoId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: "medici", // Punta alla tabella fisica dei medici
+        key: "id",
+      },
+    },
+    pazienteId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: "pazienti", // Punta alla tabella fisica dei pazienti
+        key: "id",
+      },
+    },
+    percorsoFile: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    categoria: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    dataCaricamento: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+  },
+  {
+    sequelize: database,
+    modelName: "Referto",
+    tableName: "referti",
+    timestamps: false, // Disabilitato perché gestiamo la data tramite "dataCaricamento" dell'entità
+  },
+);
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\database\models\UtenteModel.ts ---
+
+import { DataTypes, Model } from "sequelize";
+import { database } from "../database";
+
+// Definiamo il Modello estendendo la classe Model di Sequelize
+export class UtenteModel extends Model {
+  declare id: string;
+  declare nome: string;
+  declare cognome: string;
+  declare email: string;
+  declare passwordHash: string;
+  declare ruolo: string;
+  declare attivo: boolean;
+}
+
+UtenteModel.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+    },
+    nome: { type: DataTypes.STRING, allowNull: false },
+    cognome: { type: DataTypes.STRING, allowNull: false },
+    email: { type: DataTypes.STRING, allowNull: false, unique: true },
+    passwordHash: { type: DataTypes.STRING, allowNull: false },
+    ruolo: { type: DataTypes.STRING, allowNull: false },
+    attivo: { type: DataTypes.BOOLEAN, defaultValue: true },
+  },
+  {
+    sequelize: database, // Passiamo la connessione che abbiamo appena testato
+    modelName: "Utente",
+    tableName: "utenti",
+    timestamps: true,
+    updatedAt: false,
+  },
+);
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\security\BcryptPasswordHasher.ts ---
+
+import * as bcrypt from "bcrypt";
+// Importiamo le due interfacce per coprire sia la Registrazione che il Login
+import { IPasswordHasher as IPasswordHasherRegistrazione } from "../../use_cases/RegistrazionePaziente";
+import { IPasswordHasher as IPasswordHasherLogin } from "../../use_cases/Login";
+
+export class BcryptPasswordHasher
+  implements IPasswordHasherRegistrazione, IPasswordHasherLogin
+{
+  // Il "salt" definisce quanto è complessa e sicura l'operazione matematica.
+  // 10 è il valore standard raccomandato (un buon compromesso tra sicurezza e velocità).
+  private readonly saltRounds = 10;
+
+  // Metodo usato in RegistrazionePaziente e CreaMedico
+  public async hash(passwordInChiaro: string): Promise<string> {
+    return await bcrypt.hash(passwordInChiaro, this.saltRounds);
+  }
+
+  // Metodo usato in Login
+  public async compara(
+    passwordInChiaro: string,
+    hashSalvato: string,
+  ): Promise<boolean> {
+    return await bcrypt.compare(passwordInChiaro, hashSalvato);
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\security\JwtTokenManager.ts ---
+
+import * as jwt from "jsonwebtoken";
+import { Utente } from "../../entities/Utente";
+import { ITokenManager } from "../../use_cases/Login";
+
+export class JwtTokenManager implements ITokenManager {
+  // In un secondo momento sposteremo questa stringa in un file .env per sicurezza.
+  // Per adesso la teniamo qui come costante per testare il funzionamento.
+  private readonly secretKey =
+    "la_tua_chiave_segreta_super_sicura_e_segretissima";
+
+  // Il token scadrà dopo 2 ore di inattività, costringendo a un nuovo login (buona pratica nei sistemi medici)
+  private readonly expiresIn = "2h";
+
+  public generaToken(utente: Utente): string {
+    // Prepariamo le informazioni minime da inserire nel token.
+    // NON inseriamo mai dati sensibili come la password hashata.
+    const payload = {
+      id: utente.id,
+      ruolo: utente.ruolo,
+    };
+
+    // Firmiamo il token con la nostra chiave segreta
+    return jwt.sign(payload, this.secretKey, { expiresIn: this.expiresIn });
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\utils\CryptoUuidGenerator.ts ---
+
+import * as crypto from "crypto";
+import { IUuidGenerator } from "../../use_cases/RegistrazionePaziente";
+
+export class CryptoUuidGenerator implements IUuidGenerator {
+  // Implementa il metodo richiesto dai vari Casi d'Uso (Registrazione, CreaMedico, Upload, ecc.)
+  public genera(): string {
+    return crypto.randomUUID();
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\web\server.ts ---
+
+import "reflect-metadata";
+import "../../container";
+import express from "express";
+import { inizializzaDatabase } from "../database/database";
+
+import { authRouter } from "./routes/auth.routes";
+import { refertiRouter } from "./routes/referti.routes";
+import { adminRouter } from "./routes/admin.routes";
+
+const app = express();
+const PORT = 3000;
+
+app.use(express.json());
+
+// Monta i router sui rispettivi prefissi
+app.use("/api/auth", authRouter);
+app.use("/api/referti", refertiRouter);
+app.use("/api/admin", adminRouter);
+
+async function avviaServer() {
+  try {
+    console.log("🚀 Avvio del server in corso...");
+    await inizializzaDatabase();
+    app.listen(PORT, () => {
+      console.log(`✅ Server Express in ascolto sulla porta ${PORT}`);
+      console.log(`🔗 Rotte disponibili:`);
+      console.log(`   - http://localhost:${PORT}/api/auth`);
+      console.log(`   - http://localhost:${PORT}/api/referti`);
+      console.log(`   - http://localhost:${PORT}/api/admin`);
+    });
+  } catch (error) {
+    console.error("❌ Errore critico durante l'avvio del server:", error);
+    process.exit(1);
+  }
+}
+
+avviaServer();
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\web\routes\admin.routes.ts ---
+
+import { Router } from "express";
+import { AdminController } from "../../../adapters/controllers/AdminController";
+import { container } from "tsyringe";
+
+export const adminRouter = Router();
+
+const adminController = container.resolve(AdminController);
+
+adminRouter.post("/crea-medico", adminController.creaMedico);
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\web\routes\auth.routes.ts ---
+
+import { Router } from "express";
+import { container } from "../../../container";
+import { AuthController } from "../../../adapters/controllers/AuthController";
+
+export const authRouter = Router();
+
+// Chiediamo a Tsyringe di "risolvere" l'AuthController.
+// Lui capisce da solo che gli serve il Caso d'Uso, a cui servono i 5 repository, li crea tutti in memoria e ce li restituisce pronti!
+const authController = container.resolve(AuthController);
+
+authRouter.post("/registrazione-paziente", authController.registraPaziente);
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\frameworks\web\routes\referti.routes.ts ---
+
+import { Router } from "express";
+import { RefertiController } from "../../../adapters/controllers/RefertiController";
+import { container } from "tsyringe";
+
+export const refertiRouter = Router();
+
+const refertiController = container.resolve(RefertiController);
+
+refertiRouter.post("/", refertiController.upload);
+refertiRouter.get("/:id/download", refertiController.download);
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\use_cases\CreaMedico.ts ---
+
+import { Utente, RuoloUtente } from "../entities/Utente";
+import { Medico } from "../entities/Medico";
+import { AuditLog, TipoAzione } from "../entities/AuditLog";
+import { injectable, inject } from "tsyringe";
+
+export interface CreaMedicoInput {
+  adminId: string; // ID dell'amministratore che sta compiendo l'azione (per il Log)
+  nome: string;
+  cognome: string;
+  email: string;
+  passwordInChiaro: string;
+  specializzazione: string;
+  ipAddress: string;
+  numeroMatricola: string;
+}
+
+export interface IUtenteRepository {
+  findById(id: string): Promise<Utente | null>;
+  esisteEmail(email: string): Promise<boolean>;
+  salva(utente: Utente): Promise<void>;
+}
+
+export interface IMedicoRepository {
+  salva(medico: Medico): Promise<void>;
+}
+
+export interface IAuditLogRepository {
+  salva(log: AuditLog): Promise<void>;
+}
+
+export interface IPasswordHasher {
+  hash(passwordInChiaro: string): Promise<string>;
+}
+
+export interface IUuidGenerator {
+  genera(): string;
+}
+
+@injectable()
+export class CreaMedicoUseCase {
+  constructor(
+    @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
+    @inject("IMedicoRepository") private medicoRepo: IMedicoRepository,
+    @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
+    @inject("IPasswordHasher") private passwordHasher: IPasswordHasher,
+    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+  ) {}
+
+  public async execute(input: CreaMedicoInput): Promise<Utente> {
+    // 1. Controllo autorizzazione: l'utente che crea deve esistere ed essere un ADMIN
+    const responsabile = await this.utenteRepo.findById(input.adminId);
+    if (!responsabile || responsabile.ruolo !== RuoloUtente.ADMIN) {
+      throw new Error(
+        "Accesso negato: operazione consentita solo agli amministratori.",
+      );
+    }
+
+    const emailGiaUsata = await this.utenteRepo.esisteEmail(input.email);
+    if (emailGiaUsata) {
+      throw new Error("Esiste già un account con questa email.");
+    }
+
+    const passwordHashata = await this.passwordHasher.hash(
+      input.passwordInChiaro,
+    );
+
+    // 2. Creazione dell'Utente base (Forzando il ruolo MEDICO)
+    const nuovoUtenteId = this.uuidGenerator.genera();
+    const nuovoUtente = new Utente(
+      nuovoUtenteId,
+      input.nome,
+      input.cognome,
+      input.email,
+      passwordHashata,
+      RuoloUtente.MEDICO,
+    );
+
+    // 3. Creazione del profilo professionale Medico legato all'Utente
+    const nuovoMedicoId = this.uuidGenerator.genera();
+    const nuovoMedico = new Medico(
+      nuovoMedicoId,
+      nuovoUtente.id,
+      input.specializzazione,
+      input.numeroMatricola,
+    );
+
+    nuovoUtente.profiloMedico = nuovoMedico;
+
+    // 4. Tracciamento dell'operazione nell'Audit Log (associato all'ID dell'admin che ha agito)
+    const nuovoLogId = this.uuidGenerator.genera();
+    const auditLog = new AuditLog(
+      nuovoLogId,
+      responsabile.id,
+      TipoAzione.REGISTRAZIONE_UTENTE,
+      input.ipAddress,
+      null,
+    );
+
+    // Persistenza dei dati
+    await this.utenteRepo.salva(nuovoUtente);
+    await this.medicoRepo.salva(nuovoMedico);
+    await this.auditLogRepo.salva(auditLog);
+
+    return nuovoUtente;
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\use_cases\DownloadReferto.ts ---
+
+import { Referto } from "../entities/Referto";
+import { AuditLog, TipoAzione } from "../entities/AuditLog";
+import { Utente, RuoloUtente } from "../entities/Utente";
+import { injectable, inject } from "tsyringe";
+
+export interface DownloadRefertoInput {
+  utenteId: string; // Chi sta chiedendo il file (dal token JWT)
+  refertoId: string; // L'UUID del file richiesto
+  ipAddress: string; // Per l'Audit Log
+}
+
+export interface IRefertoRepository {
+  findById(id: string): Promise<Referto | null>;
+}
+
+export interface IAuditLogRepository {
+  salva(log: AuditLog): Promise<void>;
+}
+
+export interface IUtenteRepository {
+  findByIdConProfilo(id: string): Promise<Utente | null>;
+}
+
+export interface IUuidGenerator {
+  genera(): string;
+}
+
+@injectable()
+export class DownloadRefertoUseCase {
+  constructor(
+    @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
+    @inject("IRefertoRepository") private refertoRepo: IRefertoRepository,
+    @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
+    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+  ) {}
+
+  // ritorna una stringa (il percorso fisico del file sul server) in modo che Express possa poi inviare il PDF
+  public async execute(input: DownloadRefertoInput): Promise<string> {
+    // 1. Cerchiamo chi fa la richiesta e cosa sta cercando
+    const utente = await this.utenteRepo.findByIdConProfilo(input.utenteId);
+    const referto = await this.refertoRepo.findById(input.refertoId);
+
+    if (!utente) throw new Error("Utente non trovato");
+    if (!referto) throw new Error("Referto non trovato");
+
+    let autorizzato = false;
+
+    if (utente.ruolo === RuoloUtente.MEDICO && utente.profiloMedico) {
+      // È un medico: il SUO ID medico deve combaciare con il medico_id del referto
+      autorizzato = utente.profiloMedico.id === referto.medicoId;
+    } else if (
+      utente.ruolo === RuoloUtente.PAZIENTE &&
+      utente.profiloPaziente
+    ) {
+      // È un paziente: il SUO ID paziente deve combaciare con il paziente_id del referto
+      autorizzato = utente.profiloPaziente.id === referto.pazienteId;
+    }
+
+    // 3. REGISTRAZIONE NELL'AUDIT LOG (GDPR)
+    const nuovoLogId = this.uuidGenerator.genera();
+
+    if (!autorizzato) {
+      // Registriamo il tentativo illecito (o l'errore) e blocchiamo l'esecuzione
+      const logViolazione = new AuditLog(
+        nuovoLogId,
+        utente.id,
+        TipoAzione.ACCESSO_NEGATO,
+        input.ipAddress,
+        referto.id,
+      );
+      await this.auditLogRepo.salva(logViolazione);
+      throw new Error(
+        "Accesso negato: non hai i permessi per visualizzare questo referto.",
+      );
+    }
+
+    // Se arriviamo qui, l'utente è autorizzato. Registriamo il download legittimo.
+    const logSuccesso = new AuditLog(
+      nuovoLogId,
+      utente.id,
+      TipoAzione.DOWNLOAD_REFERTO,
+      input.ipAddress,
+      referto.id,
+    );
+    await this.auditLogRepo.salva(logSuccesso);
+
+    // 4. Ritorniamo il percorso in modo che il controller possa spedire il file
+    return referto.percorsoFile;
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\use_cases\Login.ts ---
+
+import { injectable, inject } from "tsyringe";
+import { Utente } from "../entities/Utente";
+
+export interface LoginInput {
+  email: string;
+  passwordInChiaro: string;
+}
+
+export interface IUtenteRepository {
+  findByEmail(email: string): Promise<Utente | null>;
+}
+
+export interface IPasswordHasher {
+  compara(passwordInChiaro: string, hashSalvato: string): Promise<boolean>;
+}
+
+export interface ITokenManager {
+  // Genererà la stringa del JWT
+  generaToken(utente: Utente): string;
+}
+
+@injectable()
+export class LoginUseCase {
+  constructor(
+    @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
+    @inject("IPasswordHasher") private passwordHasher: IPasswordHasher,
+    @inject("ITokenManager") private tokenManager: ITokenManager,
+  ) {}
+
+  public async execute(input: LoginInput): Promise<string> {
+    const utente = await this.utenteRepo.findByEmail(input.email);
+    if (!utente) {
+      throw new Error("Credenziali non valide");
+    }
+
+    if (!utente.attivo) {
+      throw new Error("Questo account è stato disabilitato");
+    }
+
+    const passwordValida = await this.passwordHasher.compara(
+      input.passwordInChiaro,
+      utente.passwordHash,
+    );
+    if (!passwordValida) {
+      throw new Error("Credenziali non valide");
+    }
+
+    return this.tokenManager.generaToken(utente);
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\use_cases\prova.ts ---
+
+import { Request, Response } from "express";
+import { injectable } from "tsyringe";
+import { LoginUseCase } from "./Login";
+import { RegistrazionePazienteUseCase } from "./RegistrazionePaziente";
+
+@injectable()
+class AuthController {
+  constructor(private loginUseCase: LoginUseCase) {}
+
+  public login = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // 1. Estraiamo i dati dal client
+      const { email, password } = req.body;
+
+      // 2. Chiamiamo il Caso d'Uso
+      const token = await this.loginUseCase.execute({
+        email,
+        passwordInChiaro: password,
+      });
+
+      // 3. Rispondiamo con il Token JWT (Status 200 OK)
+      res.status(200).json({
+        messaggio: "Login effettuato con successo",
+        token: token,
+      });
+    } catch (error) {
+      // 4. Gestione errori
+      if (error instanceof Error) {
+        // Se le credenziali sono errate, il login fallisce con un 401 Unauthorized
+        res.status(401).json({ errore: error.message });
+      } else {
+        res.status(500).json({ errore: "Errore interno del server" });
+      }
+    }
+  };
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\use_cases\RegistrazionePaziente.ts ---
+
+import { Utente, RuoloUtente } from "../entities/Utente";
+import { Paziente } from "../entities/Paziente";
+import { AuditLog, TipoAzione } from "../entities/AuditLog";
+import { injectable, inject } from "tsyringe";
+
+export interface RegistrazionePazienteInput {
+  nome: string;
+  cognome: string;
+  email: string;
+  passwordInChiaro: string;
+  codiceFiscale: string;
+  dataNascita: Date;
+  ipAddress: string;
+}
+
+export interface IUtenteRepository {
+  esisteEmail(email: string): Promise<boolean>;
+  salva(utente: Utente): Promise<void>;
+}
+
+export interface IPazienteRepository {
+  salva(paziente: Paziente): Promise<void>;
+}
+
+export interface IAuditLogRepository {
+  salva(log: AuditLog): Promise<void>;
+}
+
+export interface IPasswordHasher {
+  hash(passwordInChiaro: string): Promise<string>;
+}
+
+export interface IUuidGenerator {
+  genera(): string;
+}
+
+@injectable()
+export class RegistrazionePazienteUseCase {
+  constructor(
+    @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
+    @inject("IPazienteRepository") private pazienteRepo: IPazienteRepository,
+    @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
+    @inject("IPasswordHasher") private passwordHasher: IPasswordHasher,
+    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+  ) {}
+
+  public async execute(input: RegistrazionePazienteInput): Promise<Utente> {
+    const emailGiaUsata = await this.utenteRepo.esisteEmail(input.email);
+    if (emailGiaUsata) {
+      throw new Error("Esiste già un account con questa email.");
+    }
+
+    const passwordHashata = await this.passwordHasher.hash(
+      input.passwordInChiaro,
+    );
+
+    // 1. Creazione dell'Utente base (Forzando il ruolo PAZIENTE)
+    const nuovoUtenteId = this.uuidGenerator.genera();
+    const nuovoUtente = new Utente(
+      nuovoUtenteId,
+      input.nome,
+      input.cognome,
+      input.email,
+      passwordHashata,
+      RuoloUtente.PAZIENTE,
+    );
+
+    // 2. Creazione del profilo clinico Paziente legato all'Utente
+    const nuovoPazienteId = this.uuidGenerator.genera();
+    const nuovoPaziente = new Paziente(
+      nuovoPazienteId,
+      nuovoUtente.id,
+      input.codiceFiscale,
+      input.dataNascita,
+    );
+
+    nuovoUtente.profiloPaziente = nuovoPaziente;
+
+    // 3. Tracciamento dell'operazione nell'Audit Log
+    const nuovoLogId = this.uuidGenerator.genera();
+    const auditLog = new AuditLog(
+      nuovoLogId,
+      nuovoUtente.id,
+      TipoAzione.REGISTRAZIONE_UTENTE,
+      input.ipAddress,
+      null,
+    );
+
+    // Persistenza dei dati
+    await this.utenteRepo.salva(nuovoUtente);
+    await this.pazienteRepo.salva(nuovoPaziente);
+    await this.auditLogRepo.salva(auditLog);
+
+    return nuovoUtente;
+  }
+}
+
+
+// --- FILE: C:\Users\Utente\Desktop\Ref\backend\src\use_cases\UploadReferto.ts ---
+
+import { Referto } from "../entities/Referto";
+import { AuditLog, TipoAzione } from "../entities/AuditLog";
+import { Utente, RuoloUtente } from "../entities/Utente";
+import { injectable, inject } from "tsyringe";
+
+export interface UploadRefertoInput {
+  utenteId: string; // L'ID di chi sta facendo la richiesta (estratto dal token di sessione)
+  pazienteId: string; // Il paziente a cui è destinato il referto
+  percorsoFile: string; // Dove abbiamo salvato fisicamente il PDF sul server
+  categoria: string; // Es. "Radiografia"
+  ipAddress: string; // Per l'Audit Log
+}
+
+export interface IRefertoRepository {
+  salva(referto: Referto): Promise<void>;
+}
+
+export interface IAuditLogRepository {
+  salva(log: AuditLog): Promise<void>;
+}
+
+export interface IUtenteRepository {
+  // Cerchiamo l'utente e, se è un medico, ci facciamo restituire anche il suo "profiloMedico" popolato
+  findByIdConProfilo(id: string): Promise<Utente | null>;
+}
+
+export interface IUuidGenerator {
+  genera(): string;
+}
+
+@injectable()
+export class UploadRefertoUseCase {
+  constructor(
+    @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
+    @inject("IRefertoRepository") private refertoRepo: IRefertoRepository,
+    @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
+    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+  ) {}
+
+  public async execute(input: UploadRefertoInput): Promise<Referto> {
+    const utente = await this.utenteRepo.findByIdConProfilo(input.utenteId);
+
+    if (!utente) {
+      throw new Error("Utente non trovato");
+    }
+
+    if (utente.ruolo !== RuoloUtente.MEDICO || !utente.profiloMedico) {
+      throw new Error(
+        "Accesso negato: solo i medici registrati possono caricare referti",
+      );
+    }
+
+    // Creazione dell'Entità Referto
+    const nuovoRefertoId = this.uuidGenerator.genera();
+    const nuovoReferto = new Referto(
+      nuovoRefertoId,
+      utente.profiloMedico.id, // ID specifico del medico, non dell'utente generico
+      input.pazienteId,
+      input.percorsoFile,
+      input.categoria,
+    );
+
+    // Tracciabilità GDPR (L'impronta digitale dell'azione)
+    const nuovoLogId = this.uuidGenerator.genera();
+    const auditLog = new AuditLog(
+      nuovoLogId,
+      utente.id, // Chi ha fatto l'azione? (ID account)
+      TipoAzione.UPLOAD_REFERTO,
+      input.ipAddress,
+      nuovoReferto.id,
+    );
+
+    // Passo 4: Persistenza (Salvataggio tramite le porte)
+    // In una fase successiva (livello Adapters) potremo avvolgere queste due chiamate
+    // in una singola "Transazione SQL" per garantire che si salvino entrambe o nessuna delle due.
+    await this.refertoRepo.salva(nuovoReferto);
+    await this.auditLogRepo.salva(auditLog);
+
+    return nuovoReferto;
+  }
+}
