@@ -1,0 +1,167 @@
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6">
+      <div class="card mt-5 shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h4 card-title mb-4">Crea il tuo account</h1>
+
+          @if (registrazioneCompletata()) {
+            <div class="alert alert-success" role="alert">
+              Registrazione completata! Verrai reindirizzato al login...
+            </div>
+          } @else {
+            <form [formGroup]="form" (ngSubmit)="invia()">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="nome" class="form-label">Nome</label>
+                  <input
+                    id="nome"
+                    class="form-control"
+                    formControlName="nome"
+                  />
+                  @if (
+                    form.controls.nome.touched &&
+                    form.controls.nome.hasError('required')
+                  ) {
+                    <div class="form-text text-danger">
+                      Il nome è obbligatorio
+                    </div>
+                  }
+                </div>
+
+                <div class="col-md-6">
+                  <label for="cognome" class="form-label">Cognome</label>
+                  <input
+                    id="cognome"
+                    class="form-control"
+                    formControlName="cognome"
+                  />
+                  @if (
+                    form.controls.cognome.touched &&
+                    form.controls.cognome.hasError('required')
+                  ) {
+                    <div class="form-text text-danger">
+                      Il cognome è obbligatorio
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  class="form-control"
+                  formControlName="email"
+                />
+                @if (
+                  form.controls.email.touched && form.controls.email.invalid
+                ) {
+                  <div class="form-text text-danger">
+                    @if (form.controls.email.hasError('required')) {
+                      L'email è obbligatoria
+                    } @else if (form.controls.email.hasError('email')) {
+                      Formato email non valido
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  class="form-control"
+                  formControlName="password"
+                />
+                @if (
+                  form.controls.password.touched &&
+                  form.controls.password.invalid
+                ) {
+                  <div class="form-text text-danger">
+                    @if (form.controls.password.hasError('required')) {
+                      La password è obbligatoria
+                    } @else if (
+                      form.controls.password.hasError('minlength')
+                    ) {
+                      La password deve avere almeno 8 caratteri
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="codiceFiscale" class="form-label"
+                    >Codice fiscale</label
+                  >
+                  <input
+                    id="codiceFiscale"
+                    class="form-control"
+                    formControlName="codiceFiscale"
+                    (input)="maiuscoloCF()"
+                    maxlength="16"
+                  />
+                  @if (
+                    form.controls.codiceFiscale.touched &&
+                    form.controls.codiceFiscale.invalid
+                  ) {
+                    <div class="form-text text-danger">
+                      @if (
+                        form.controls.codiceFiscale.hasError('required')
+                      ) {
+                        Obbligatorio
+                      } @else {
+                        Deve avere 16 caratteri
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="col-md-6">
+                  <label for="dataNascita" class="form-label"
+                    >Data di nascita</label
+                  >
+                  <input
+                    id="dataNascita"
+                    type="date"
+                    class="form-control"
+                    formControlName="dataNascita"
+                  />
+                  @if (
+                    form.controls.dataNascita.touched &&
+                    form.controls.dataNascita.hasError('required')
+                  ) {
+                    <div class="form-text text-danger">Obbligatoria</div>
+                  }
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="btn btn-primary w-100"
+                [disabled]="inCorso()"
+              >
+                @if (inCorso()) {
+                  <span
+                    class="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  ></span>
+                } @else {
+                  Registrati
+                }
+              </button>
+            </form>
+          }
+
+          <p class="text-center mt-3 mb-0">
+            Hai già un account?
+            <a routerLink="/login">Accedi</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

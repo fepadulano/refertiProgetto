@@ -1,0 +1,64 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container">
+    <a class="navbar-brand" routerLink="/">Referti Clinici</a>
+
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarContenuto"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarContenuto">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Home
+          </a>
+        </li>
+        @if (utenteCorrente()?.ruolo === RuoloUtente.PAZIENTE) {
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/storico" routerLinkActive="active">
+              I miei referti
+            </a>
+          </li>
+        }
+        @if (utenteCorrente()?.ruolo === RuoloUtente.MEDICO) {
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              routerLink="/carica-referto"
+              routerLinkActive="active"
+            >
+              Carica referto
+            </a>
+          </li>
+        }
+        @if (utenteCorrente()?.ruolo === RuoloUtente.ADMIN) {
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              routerLink="/gestione-medici"
+              routerLinkActive="active"
+            >
+              Gestione medici
+            </a>
+          </li>
+        }
+      </ul>
+
+      <button type="button" class="btn btn-outline-light" (click)="logout()">
+        Esci
+      </button>
+    </div>
+  </div>
+</nav>
+
+<router-outlet></router-outlet>

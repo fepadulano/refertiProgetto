@@ -1,0 +1,125 @@
+<div class="container py-4">
+  <h1 class="h3 mb-4">Carica referto</h1>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="h6 card-title">Cerca paziente per codice fiscale</h2>
+
+      <form [formGroup]="formRicerca" class="row g-2 align-items-start">
+        <div class="col-12 col-md-6">
+          <input
+            class="form-control"
+            formControlName="codiceFiscale"
+            (input)="maiuscoloCF()"
+            maxlength="16"
+            placeholder="Codice fiscale (16 caratteri)"
+          />
+          <div class="form-text">
+            La ricerca parte da sola appena il codice fiscale è completo.
+          </div>
+          @if (
+            formRicerca.controls.codiceFiscale.touched &&
+            formRicerca.controls.codiceFiscale.invalid
+          ) {
+            <div class="form-text text-danger">
+              Il codice fiscale deve avere esattamente 16 caratteri.
+            </div>
+          }
+        </div>
+
+        <div class="col-12 col-md-auto">
+          @if (ricercaInCorso()) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          }
+        </div>
+      </form>
+    </div>
+  </div>
+
+  @if (pazienteTrovato(); as paziente) {
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 card-title">Paziente trovato</h2>
+
+        <ul class="list-group list-group-flush mb-4">
+          <li class="list-group-item d-flex justify-content-between">
+            <span class="text-uppercase text-secondary small">Nome</span>
+            <span class="fw-semibold">{{ paziente.nome }} {{ paziente.cognome }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span class="text-uppercase text-secondary small">Codice fiscale</span>
+            <span class="font-monospace">{{ paziente.codiceFiscale }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span class="text-uppercase text-secondary small">Data di nascita</span>
+            <span>{{ paziente.dataNascita | date: "dd/MM/yyyy" }}</span>
+          </li>
+        </ul>
+
+        <h2 class="h6 card-title">Carica un nuovo referto</h2>
+
+        <form [formGroup]="formUpload" (ngSubmit)="carica()" class="row g-3">
+          <div class="col-12 col-md-6">
+            <label for="categoria" class="form-label">Categoria</label>
+            <input
+              id="categoria"
+              class="form-control"
+              formControlName="categoria"
+              placeholder="Es. Esame del sangue"
+            />
+            @if (
+              formUpload.controls.categoria.touched &&
+              formUpload.controls.categoria.invalid
+            ) {
+              <div class="form-text text-danger">La categoria è obbligatoria.</div>
+            }
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="dataEsame" class="form-label">Data esame</label>
+            <input
+              id="dataEsame"
+              type="date"
+              class="form-control"
+              formControlName="dataEsame"
+            />
+            @if (
+              formUpload.controls.dataEsame.touched &&
+              formUpload.controls.dataEsame.invalid
+            ) {
+              <div class="form-text text-danger">
+                La data dell'esame è obbligatoria.
+              </div>
+            }
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="file" class="form-label">File PDF</label>
+            <input
+              id="file"
+              #inputFile
+              type="file"
+              class="form-control"
+              accept="application/pdf"
+              (change)="selezionaFile($event)"
+            />
+          </div>
+
+          <div class="col-12">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="uploadInCorso() || !fileSelezionato"
+            >
+              @if (uploadInCorso()) {
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              } @else {
+                Carica referto
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

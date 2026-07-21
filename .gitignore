@@ -1,4 +1,8 @@
-node_modules/
-dist/
-.env
-uploads/
+# Materiale di tesi (PDF, sorgenti LaTeX, tesi di riferimento): non è codice
+# del progetto, resta solo in locale.
+*.pdf
+*.tex
+tesi-di-riferimento/
+
+# Configurazione locale di Claude Code
+.claude/

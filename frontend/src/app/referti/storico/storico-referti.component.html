@@ -1,0 +1,94 @@
+<div class="container py-4">
+  <h1 class="h3 mb-4">I miei referti</h1>
+
+  <form [formGroup]="filtri" (ngSubmit)="cerca()" class="row g-3 align-items-end mb-4">
+    <div class="col-12 col-md-4">
+      <label for="categoria" class="form-label">Categoria</label>
+      <input
+        id="categoria"
+        class="form-control"
+        formControlName="categoria"
+        placeholder="Es. Esame del sangue"
+      />
+    </div>
+
+    <div class="col-6 col-md-3">
+      <label for="dataInizio" class="form-label">Dal</label>
+      <input
+        id="dataInizio"
+        type="date"
+        class="form-control"
+        formControlName="dataInizio"
+      />
+    </div>
+
+    <div class="col-6 col-md-3">
+      <label for="dataFine" class="form-label">Al</label>
+      <input
+        id="dataFine"
+        type="date"
+        class="form-control"
+        formControlName="dataFine"
+      />
+    </div>
+
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-fill">Filtra</button>
+      <button type="button" class="btn btn-outline-secondary" (click)="reset()">
+        Reset
+      </button>
+    </div>
+  </form>
+
+  @if (inCorso()) {
+    <div class="text-center py-4">
+      <span class="spinner-border" aria-hidden="true"></span>
+    </div>
+  } @else if (referti().length === 0) {
+    <p class="text-secondary">Nessun referto trovato.</p>
+  } @else {
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th scope="col">Categoria</th>
+            <th scope="col">Data esame</th>
+            <th scope="col">Data caricamento</th>
+            <th scope="col" class="text-end">Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (referto of refertiPagina(); track referto.id) {
+            <tr>
+              <td>{{ referto.categoria }}</td>
+              <td>{{ referto.dataEsame | date: "dd/MM/yyyy" }}</td>
+              <td>{{ referto.dataCaricamento | date: "dd/MM/yyyy HH:mm" }}</td>
+              <td class="text-end">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  (click)="scarica(referto)"
+                >
+                  Scarica PDF
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-paginator
+      [paginaCorrente]="paginaCorrente()"
+      [numeroPagine]="numeroPagine()"
+      (cambiaPagina)="cambiaPagina($event)"
+    />
+
+    <div class="card mt-4">
+      <div class="card-body">
+        <h2 class="h6 card-title">Referti per categoria</h2>
+        <canvas #grafico></canvas>
+      </div>
+    </div>
+  }
+</div>

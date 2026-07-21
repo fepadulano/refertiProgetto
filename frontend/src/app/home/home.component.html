@@ -1,0 +1,28 @@
+<main class="container py-5">
+  @if (utenteCorrente(); as utente) {
+    <h1 class="mb-4">Bentornato.</h1>
+
+    <div class="card">
+      <ul class="list-group list-group-flush">
+        <li
+          class="list-group-item d-flex justify-content-between align-items-center"
+        >
+          <span class="text-uppercase text-secondary small">Ruolo</span>
+          <span class="fw-semibold">{{ utente.ruolo }}</span>
+        </li>
+        <li
+          class="list-group-item d-flex justify-content-between align-items-center"
+        >
+          <span class="text-uppercase text-secondary small">Id utente</span>
+          <span class="font-monospace">{{ utente.id }}</span>
+        </li>
+      </ul>
+    </div>
+
+    @if (utente.ruolo === RuoloUtente.PAZIENTE) {
+      <a routerLink="/storico" class="btn btn-primary mt-4">
+        Vedi i miei referti
+      </a>
+    }
+  }
+</main>

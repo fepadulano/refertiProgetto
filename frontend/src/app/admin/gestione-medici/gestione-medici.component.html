@@ -1,0 +1,136 @@
+<div class="container py-4">
+  <h1 class="h3 mb-4">Gestione medici</h1>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="h6 card-title">Crea nuovo account medico</h2>
+
+      <form [formGroup]="formNuovoMedico" (ngSubmit)="creaMedico()" class="row g-3">
+        <div class="col-12 col-md-6">
+          <label for="nome" class="form-label">Nome</label>
+          <input id="nome" class="form-control" formControlName="nome" />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label for="cognome" class="form-label">Cognome</label>
+          <input id="cognome" class="form-control" formControlName="cognome" />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label for="email" class="form-label">Email</label>
+          <input id="email" type="email" class="form-control" formControlName="email" />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label for="password" class="form-label">Password</label>
+          <input id="password" type="password" class="form-control" formControlName="password" />
+          @if (
+            formNuovoMedico.controls.password.touched &&
+            formNuovoMedico.controls.password.hasError("minlength")
+          ) {
+            <div class="form-text text-danger">
+              La password deve avere almeno 8 caratteri.
+            </div>
+          }
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label for="specializzazione" class="form-label">Specializzazione</label>
+          <input
+            id="specializzazione"
+            class="form-control"
+            formControlName="specializzazione"
+            placeholder="Es. Cardiologia"
+          />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label for="numeroMatricola" class="form-label">Numero matricola</label>
+          <input
+            id="numeroMatricola"
+            class="form-control"
+            formControlName="numeroMatricola"
+          />
+        </div>
+
+        <div class="col-12">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="creazioneInCorso()"
+          >
+            @if (creazioneInCorso()) {
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            } @else {
+              Crea medico
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h2 class="h6 card-title">Medici registrati</h2>
+
+      @if (caricamento()) {
+        <div class="text-center py-4">
+          <span class="spinner-border" aria-hidden="true"></span>
+        </div>
+      } @else if (medici().length === 0) {
+        <p class="text-secondary mb-0">Nessun medico registrato.</p>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">Email</th>
+                <th scope="col">Specializzazione</th>
+                <th scope="col">Matricola</th>
+                <th scope="col">Stato</th>
+                <th scope="col" class="text-end">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (medico of mediciPagina(); track medico.utenteId) {
+                <tr>
+                  <td>{{ medico.nome }} {{ medico.cognome }}</td>
+                  <td>{{ medico.email }}</td>
+                  <td>{{ medico.specializzazione }}</td>
+                  <td class="font-monospace">{{ medico.numeroMatricola }}</td>
+                  <td>
+                    @if (medico.attivo) {
+                      <span class="badge text-bg-success">Attivo</span>
+                    } @else {
+                      <span class="badge text-bg-secondary">Disabilitato</span>
+                    }
+                  </td>
+                  <td class="text-end">
+                    @if (medico.attivo) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        [disabled]="medicoInDisabilitazione() === medico.utenteId"
+                        (click)="disabilita(medico)"
+                      >
+                        Disabilita
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <app-paginator
+          [paginaCorrente]="paginaCorrente()"
+          [numeroPagine]="numeroPagine()"
+          (cambiaPagina)="cambiaPagina($event)"
+        />
+      }
+    </div>
+  </div>
+</div>

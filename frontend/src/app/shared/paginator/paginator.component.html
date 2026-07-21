@@ -1,0 +1,23 @@
+<div class="d-flex justify-content-between align-items-center">
+  <button
+    type="button"
+    class="btn btn-sm btn-outline-secondary"
+    [disabled]="paginaCorrente() === 1"
+    (click)="precedente()"
+  >
+    &laquo; Precedente
+  </button>
+
+  <span class="text-secondary small">
+    Pagina {{ paginaCorrente() }} di {{ numeroPagine() }}
+  </span>
+
+  <button
+    type="button"
+    class="btn btn-sm btn-outline-secondary"
+    [disabled]="paginaCorrente() === numeroPagine()"
+    (click)="successiva()"
+  >
+    Successiva &raquo;
+  </button>
+</div>
