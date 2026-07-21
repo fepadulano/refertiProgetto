@@ -1,4 +1,5 @@
 import { Referto } from "../../entities/Referto";
+import { Transazione } from "./IGestoreTransazioni";
 
 export interface FiltriStoricoReferti {
   categoria?: string;
@@ -7,7 +8,7 @@ export interface FiltriStoricoReferti {
 }
 
 export interface IRefertoRepository {
-  salva(referto: Referto): Promise<void>;
+  salva(referto: Referto, transazione?: Transazione): Promise<void>;
   findById(id: string): Promise<Referto | null>;
   // Elenco storico di un paziente, dal più recente al più vecchio (RF5), con filtri opzionali (RF7)
   findByPazienteId(

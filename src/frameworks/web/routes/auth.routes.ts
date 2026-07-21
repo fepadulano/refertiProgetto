@@ -2,6 +2,7 @@ import { Router } from "express";
 import { container } from "../../../container";
 import { AuthController } from "../../../adapters/controllers/AuthController";
 import { validaBody } from "../middlewares/validate.middleware";
+import { limitatoreLogin } from "../middlewares/rateLimit.middleware";
 import {
   registrazionePazienteSchema,
   loginSchema,
@@ -18,4 +19,9 @@ authRouter.post(
   validaBody(registrazionePazienteSchema),
   authController.registraPaziente,
 );
-authRouter.post("/login", validaBody(loginSchema), authController.login);
+authRouter.post(
+  "/login",
+  limitatoreLogin,
+  validaBody(loginSchema),
+  authController.login,
+);

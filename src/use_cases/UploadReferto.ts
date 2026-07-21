@@ -8,6 +8,7 @@ import {
   IRefertoRepository,
   IAuditLogRepository,
   IUuidGenerator,
+  IGestoreTransazioni,
 } from "./ports";
 
 export interface UploadRefertoInput {
@@ -15,6 +16,7 @@ export interface UploadRefertoInput {
   pazienteId: string; // Il paziente a cui è destinato il referto
   percorsoFile: string; // Dove abbiamo salvato fisicamente il PDF sul server
   categoria: string; // Es. "Radiografia"
+  dataEsame: Date; // Quando è stato eseguito l'esame (RF4), non quando viene caricato
   ipAddress: string; // Per l'Audit Log
 }
 
@@ -25,6 +27,8 @@ export class UploadRefertoUseCase {
     @inject("IRefertoRepository") private refertoRepo: IRefertoRepository,
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
     @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGestoreTransazioni")
+    private gestoreTransazioni: IGestoreTransazioni,
   ) {}
 
   public async execute(input: UploadRefertoInput): Promise<Referto> {
@@ -48,6 +52,7 @@ export class UploadRefertoUseCase {
       input.pazienteId,
       input.percorsoFile,
       input.categoria,
+      input.dataEsame,
     );
 
     // Tracciabilità GDPR (L'impronta digitale dell'azione)
@@ -60,11 +65,12 @@ export class UploadRefertoUseCase {
       nuovoReferto.id,
     );
 
-    // Passo 4: Persistenza (Salvataggio tramite le porte)
-    // In una fase successiva (livello Adapters) potremo avvolgere queste due chiamate
-    // in una singola "Transazione SQL" per garantire che si salvino entrambe o nessuna delle due.
-    await this.refertoRepo.salva(nuovoReferto);
-    await this.auditLogRepo.salva(auditLog);
+    // Passo 4: Persistenza — le due scritture avvengono insieme, o nessuna
+    // delle due (RNF2 - integrità e affidabilità dei dati)
+    await this.gestoreTransazioni.esegui(async (transazione) => {
+      await this.refertoRepo.salva(nuovoReferto, transazione);
+      await this.auditLogRepo.salva(auditLog, transazione);
+    });
 
     return nuovoReferto;
   }

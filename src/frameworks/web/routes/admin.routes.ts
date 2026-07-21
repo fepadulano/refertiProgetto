@@ -21,3 +21,5 @@ adminRouter.post(
   abilitaProtezioneJwt,
   adminController.disabilitaMedico,
 );
+
+adminRouter.get("/medici", abilitaProtezioneJwt, adminController.elencoMedici);

@@ -8,6 +8,7 @@ import {
   IAuditLogRepository,
   IPasswordHasher,
   IUuidGenerator,
+  IGestoreTransazioni,
 } from "./ports";
 
 export interface RegistrazionePazienteInput {
@@ -28,6 +29,8 @@ export class RegistrazionePazienteUseCase {
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
     @inject("IPasswordHasher") private passwordHasher: IPasswordHasher,
     @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGestoreTransazioni")
+    private gestoreTransazioni: IGestoreTransazioni,
   ) {}
 
   public async execute(input: RegistrazionePazienteInput): Promise<Utente> {
@@ -53,10 +56,13 @@ export class RegistrazionePazienteUseCase {
 
     // 2. Creazione del profilo clinico Paziente legato all'Utente
     const nuovoPazienteId = this.uuidGenerator.genera();
+    // Normalizzato in maiuscolo (convenzione del CF italiano): senza questo,
+    // un paziente scritto minuscolo in fase di registrazione non verrebbe
+    // più trovato da un medico che lo cerca in maiuscolo.
     const nuovoPaziente = new Paziente(
       nuovoPazienteId,
       nuovoUtente.id,
-      input.codiceFiscale,
+      input.codiceFiscale.trim().toUpperCase(),
       input.dataNascita,
     );
 
@@ -72,10 +78,13 @@ export class RegistrazionePazienteUseCase {
       null,
     );
 
-    // Persistenza dei dati
-    await this.utenteRepo.salva(nuovoUtente);
-    await this.pazienteRepo.salva(nuovoPaziente);
-    await this.auditLogRepo.salva(auditLog);
+    // Persistenza dei dati: le tre scritture avvengono tutte insieme,
+    // o nessuna delle tre (RNF2 - integrità e affidabilità dei dati)
+    await this.gestoreTransazioni.esegui(async (transazione) => {
+      await this.utenteRepo.salva(nuovoUtente, transazione);
+      await this.pazienteRepo.salva(nuovoPaziente, transazione);
+      await this.auditLogRepo.salva(auditLog, transazione);
+    });
 
     return nuovoUtente;
   }

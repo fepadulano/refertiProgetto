@@ -1,10 +1,11 @@
+import { Transaction } from "sequelize";
 import { Medico } from "../../entities/Medico";
 import { Paziente } from "../../entities/Paziente";
 import { Utente, RuoloUtente } from "../../entities/Utente";
 import { MedicoModel } from "../../frameworks/database/models/MedicoModel";
 import { PazienteModel } from "../../frameworks/database/models/PazienteModel";
 import { UtenteModel } from "../../frameworks/database/models/UtenteModel";
-import { IUtenteRepository } from "../../use_cases/ports";
+import { IUtenteRepository, Transazione } from "../../use_cases/ports";
 
 export class UtenteRepository implements IUtenteRepository {
   // Controlla se un'email è già registrata (usato sia da Paziente che da Medico)
@@ -14,23 +15,32 @@ export class UtenteRepository implements IUtenteRepository {
   }
 
   // Salva l'entità pura nel database usando Sequelize
-  public async salva(utente: Utente): Promise<void> {
-    await UtenteModel.create({
-      id: utente.id,
-      nome: utente.nome,
-      cognome: utente.cognome,
-      email: utente.email,
-      passwordHash: utente.passwordHash,
-      ruolo: utente.ruolo,
-      attivo: utente.attivo,
-    });
+  public async salva(utente: Utente, transazione?: Transazione): Promise<void> {
+    await UtenteModel.create(
+      {
+        id: utente.id,
+        nome: utente.nome,
+        cognome: utente.cognome,
+        email: utente.email,
+        passwordHash: utente.passwordHash,
+        ruolo: utente.ruolo,
+        attivo: utente.attivo,
+      },
+      { transaction: transazione as Transaction | undefined },
+    );
   }
 
   // Persiste modifiche di stato su un utente esistente (es. disabilitazione account)
-  public async aggiorna(utente: Utente): Promise<void> {
+  public async aggiorna(
+    utente: Utente,
+    transazione?: Transazione,
+  ): Promise<void> {
     await UtenteModel.update(
       { attivo: utente.attivo },
-      { where: { id: utente.id } },
+      {
+        where: { id: utente.id },
+        transaction: transazione as Transaction | undefined,
+      },
     );
   }
 
@@ -106,5 +116,45 @@ export class UtenteRepository implements IUtenteRepository {
     }
 
     return utente;
+  }
+
+  // Serve alla schermata admin "elenco medici": tutti gli utenti MEDICO,
+  // ciascuno con il proprio profilo (specializzazione, numero matricola) allegato
+  public async findTuttiMediciConProfilo(): Promise<Utente[]> {
+    const utentiDb = await UtenteModel.findAll({
+      where: { ruolo: RuoloUtente.MEDICO },
+      order: [
+        ["cognome", "ASC"],
+        ["nome", "ASC"],
+      ],
+    });
+
+    const mediciDb = await MedicoModel.findAll({
+      where: { utenteId: utentiDb.map((utenteDb) => utenteDb.id) },
+    });
+
+    return utentiDb.map((utenteDb) => {
+      const utente = new Utente(
+        utenteDb.id as string,
+        utenteDb.nome as string,
+        utenteDb.cognome as string,
+        utenteDb.email as string,
+        utenteDb.passwordHash as string,
+        utenteDb.ruolo as RuoloUtente,
+        utenteDb.attivo as boolean,
+      );
+
+      const medicoDb = mediciDb.find((m) => m.utenteId === utenteDb.id);
+      if (medicoDb) {
+        utente.profiloMedico = new Medico(
+          medicoDb.id as string,
+          medicoDb.utenteId as string,
+          medicoDb.specializzazione as string,
+          medicoDb.numeroMatricola as string,
+        );
+      }
+
+      return utente;
+    });
   }
 }

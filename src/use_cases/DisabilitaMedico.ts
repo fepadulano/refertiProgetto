@@ -6,6 +6,7 @@ import {
   IUtenteRepository,
   IAuditLogRepository,
   IUuidGenerator,
+  IGestoreTransazioni,
 } from "./ports";
 
 export interface DisabilitaMedicoInput {
@@ -20,6 +21,8 @@ export class DisabilitaMedicoUseCase {
     @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
     @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGestoreTransazioni")
+    private gestoreTransazioni: IGestoreTransazioni,
   ) {}
 
   public async execute(input: DisabilitaMedicoInput): Promise<void> {
@@ -36,7 +39,6 @@ export class DisabilitaMedicoUseCase {
     }
 
     medico.disabilitaAccount();
-    await this.utenteRepo.aggiorna(medico);
 
     const auditLog = new AuditLog(
       this.uuidGenerator.genera(),
@@ -45,6 +47,11 @@ export class DisabilitaMedicoUseCase {
       input.ipAddress,
       null,
     );
-    await this.auditLogRepo.salva(auditLog);
+
+    // Le due scritture avvengono insieme, o nessuna delle due (RNF2)
+    await this.gestoreTransazioni.esegui(async (transazione) => {
+      await this.utenteRepo.aggiorna(medico, transazione);
+      await this.auditLogRepo.salva(auditLog, transazione);
+    });
   }
 }

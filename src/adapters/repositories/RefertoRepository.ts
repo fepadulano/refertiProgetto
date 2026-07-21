@@ -1,23 +1,28 @@
-import { Op, WhereOptions } from "sequelize";
+import { Op, Transaction, WhereOptions } from "sequelize";
 import { Referto } from "../../entities/Referto";
 import { RefertoModel } from "../../frameworks/database/models/RefertoModel";
 import {
   IRefertoRepository,
   FiltriStoricoReferti,
+  Transazione,
 } from "../../use_cases/ports";
 
 // Questa classe soddisfa i requisiti sia del caso d'uso di Upload che di quello di Download
 export class RefertoRepository implements IRefertoRepository {
   // Salva il referto nel database (usato in UploadReferto)
-  public async salva(referto: Referto): Promise<void> {
-    await RefertoModel.create({
-      id: referto.id,
-      medicoId: referto.medicoId,
-      pazienteId: referto.pazienteId,
-      percorsoFile: referto.percorsoFile,
-      categoria: referto.categoria,
-      dataCaricamento: referto.dataCaricamento,
-    });
+  public async salva(referto: Referto, transazione?: Transazione): Promise<void> {
+    await RefertoModel.create(
+      {
+        id: referto.id,
+        medicoId: referto.medicoId,
+        pazienteId: referto.pazienteId,
+        percorsoFile: referto.percorsoFile,
+        categoria: referto.categoria,
+        dataEsame: referto.dataEsame,
+        dataCaricamento: referto.dataCaricamento,
+      },
+      { transaction: transazione as Transaction | undefined },
+    );
   }
 
   // Cerca un referto tramite il suo ID (usato in DownloadReferto)
@@ -68,6 +73,7 @@ export class RefertoRepository implements IRefertoRepository {
       refertoDb.pazienteId as string,
       refertoDb.percorsoFile as string,
       refertoDb.categoria as string,
+      refertoDb.dataEsame as Date,
       refertoDb.dataCaricamento as Date,
     );
   }

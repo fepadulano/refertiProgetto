@@ -1,16 +1,23 @@
+import { Transaction } from "sequelize";
 import { Paziente } from "../../entities/Paziente";
 import { PazienteModel } from "../../frameworks/database/models/PazienteModel";
-import { IPazienteRepository } from "../../use_cases/ports";
+import { IPazienteRepository, Transazione } from "../../use_cases/ports";
 
 export class PazienteRepository implements IPazienteRepository {
   // Salva l'entità Paziente nel database usando Sequelize
-  public async salva(paziente: Paziente): Promise<void> {
-    await PazienteModel.create({
-      id: paziente.id,
-      utenteId: paziente.utenteId,
-      codiceFiscale: paziente.codiceFiscale,
-      dataNascita: paziente.dataNascita,
-    });
+  public async salva(
+    paziente: Paziente,
+    transazione?: Transazione,
+  ): Promise<void> {
+    await PazienteModel.create(
+      {
+        id: paziente.id,
+        utenteId: paziente.utenteId,
+        codiceFiscale: paziente.codiceFiscale,
+        dataNascita: paziente.dataNascita,
+      },
+      { transaction: transazione as Transaction | undefined },
+    );
   }
 
   // Ricerca un paziente dal suo ID Utente

@@ -2,6 +2,7 @@ import { Response } from "express";
 import { injectable, inject } from "tsyringe";
 import { CreaMedicoUseCase } from "../../use_cases/CreaMedico";
 import { DisabilitaMedicoUseCase } from "../../use_cases/DisabilitaMedico";
+import { ElencoMediciUseCase } from "../../use_cases/ElencoMedici";
 import { AuthRequest } from "../../frameworks/web/middlewares/auth.middleware";
 import { gestisciErroreHttp } from "./gestisciErroreHttp";
 
@@ -11,7 +12,26 @@ export class AdminController {
     @inject(CreaMedicoUseCase) private creaMedicoUseCase: CreaMedicoUseCase,
     @inject(DisabilitaMedicoUseCase)
     private disabilitaMedicoUseCase: DisabilitaMedicoUseCase,
+    @inject(ElencoMediciUseCase)
+    private elencoMediciUseCase: ElencoMediciUseCase,
   ) {}
+
+  // Elenco dei medici registrati, usato dalla schermata admin per scegliere chi disabilitare
+  public elencoMedici = async (
+    req: AuthRequest,
+    res: Response,
+  ): Promise<void> => {
+    try {
+      const adminId = req.user?.id;
+      if (!adminId) throw new Error("Utente non autenticato");
+
+      const medici = await this.elencoMediciUseCase.execute({ adminId });
+
+      res.status(200).json({ medici });
+    } catch (error) {
+      gestisciErroreHttp(error, res);
+    }
+  };
 
   public creaMedico = async (
     req: AuthRequest,

@@ -6,3 +6,4 @@ export * from "./IAuditLogRepository";
 export * from "./IPasswordHasher";
 export * from "./IUuidGenerator";
 export * from "./ITokenManager";
+export * from "./IGestoreTransazioni";

@@ -5,4 +5,5 @@ import { z } from "zod";
 export const uploadRefertoSchema = z.object({
   pazienteId: z.string().min(1, "Il pazienteId è obbligatorio"),
   categoria: z.string().min(1, "La categoria è obbligatoria"),
+  dataEsame: z.string().min(1, "La data dell'esame è obbligatoria"),
 });

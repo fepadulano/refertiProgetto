@@ -7,6 +7,7 @@ export class RefertoModel extends Model {
   declare pazienteId: string;
   declare percorsoFile: string;
   declare categoria: string;
+  declare dataEsame: Date;
   declare dataCaricamento: Date;
 }
 
@@ -39,6 +40,14 @@ RefertoModel.init(
     categoria: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    dataEsame: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      // Il default serve solo in fase di migrazione, per non rompere le righe
+      // già esistenti create prima dell'introduzione di questo campo: ogni
+      // nuovo referto passa sempre un valore esplicito, mai quello di default.
+      defaultValue: DataTypes.NOW,
     },
     dataCaricamento: {
       type: DataTypes.DATE,

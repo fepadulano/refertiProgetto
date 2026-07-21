@@ -34,8 +34,11 @@ export class RicercaPazienteUseCase {
       );
     }
 
+    // Stessa normalizzazione applicata in fase di registrazione: senza
+    // questo, una differenza di maiuscole/minuscole o spazi farebbe
+    // fallire la ricerca anche per un paziente esistente.
     const paziente = await this.pazienteRepo.findByCodiceFiscale(
-      input.codiceFiscale,
+      input.codiceFiscale.trim().toUpperCase(),
     );
     if (!paziente) {
       throw new Error("Nessun paziente trovato con questo codice fiscale.");

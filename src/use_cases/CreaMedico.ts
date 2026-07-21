@@ -9,6 +9,7 @@ import {
   IAuditLogRepository,
   IPasswordHasher,
   IUuidGenerator,
+  IGestoreTransazioni,
 } from "./ports";
 
 export interface CreaMedicoInput {
@@ -30,6 +31,8 @@ export class CreaMedicoUseCase {
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
     @inject("IPasswordHasher") private passwordHasher: IPasswordHasher,
     @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGestoreTransazioni")
+    private gestoreTransazioni: IGestoreTransazioni,
   ) {}
 
   public async execute(input: CreaMedicoInput): Promise<Utente> {
@@ -82,10 +85,13 @@ export class CreaMedicoUseCase {
       null,
     );
 
-    // Persistenza dei dati
-    await this.utenteRepo.salva(nuovoUtente);
-    await this.medicoRepo.salva(nuovoMedico);
-    await this.auditLogRepo.salva(auditLog);
+    // Persistenza dei dati: le tre scritture avvengono tutte insieme,
+    // o nessuna delle tre (RNF2 - integrità e affidabilità dei dati)
+    await this.gestoreTransazioni.esegui(async (transazione) => {
+      await this.utenteRepo.salva(nuovoUtente, transazione);
+      await this.medicoRepo.salva(nuovoMedico, transazione);
+      await this.auditLogRepo.salva(auditLog, transazione);
+    });
 
     return nuovoUtente;
   }
