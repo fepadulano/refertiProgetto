@@ -21,9 +21,10 @@ export async function inizializzaDatabase() {
     await database.authenticate();
     console.log("📦 Connessione a PostgreSQL stabilita.");
 
-    // Sincronizza i modelli alterando le tabelle se necessario
-    await database.sync({ alter: true });
-    console.log("🔄 Tabelle del database sincronizzate con successo.");
+    // Lo schema del database non viene più sincronizzato automaticamente
+    // (sync({alter:true})): è gestito da migrazioni versionate
+    // (src/frameworks/database/migrations/), eseguite a parte con
+    // "npx sequelize-cli db:migrate" prima di avviare l'app o i test.
 
     await rendiAuditLogImmutabile();
     console.log("🔒 Vincolo di sola-scrittura su audit_logs applicato.");

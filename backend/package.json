@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/frameworks/web/server.ts",
     "build": "tsc",
-    "test": "jest"
+    "pretest": "sequelize-cli db:migrate",
+    "test": "jest",
+    "migrate": "sequelize-cli db:migrate",
+    "migrate:undo": "sequelize-cli db:migrate:undo"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +27,7 @@
     "pg-hstore": "^2.3.4",
     "reflect-metadata": "^0.2.2",
     "sequelize": "^6.37.8",
+    "socket.io": "^4.8.3",
     "tsyringe": "^4.10.0",
     "zod": "^4.4.3"
   },
@@ -37,6 +41,7 @@
     "@types/node": "^25.9.4",
     "@types/supertest": "^7.2.1",
     "jest": "^30.4.2",
+    "sequelize-cli": "^6.6.5",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",
     "tsx": "^4.22.4",

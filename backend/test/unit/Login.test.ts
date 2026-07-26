@@ -73,27 +73,4 @@ describe("LoginUseCase (unit, con repository finti)", () => {
 
     expect(auditLogRepo.logs).toHaveLength(0);
   });
-
-  it("blocca l'account dopo 5 tentativi falliti, anche con la password corretta", async () => {
-    for (let i = 0; i < 5; i++) {
-      await expect(
-        useCase.execute({
-          email: "mario@test.it",
-          passwordInChiaro: "PasswordSbagliata",
-          ipAddress: "127.0.0.1",
-        }),
-      ).rejects.toThrow("Credenziali non valide");
-    }
-
-    await expect(
-      useCase.execute({
-        email: "mario@test.it",
-        passwordInChiaro: "PasswordCorretta1!",
-        ipAddress: "127.0.0.1",
-      }),
-    ).rejects.toThrow(/Troppi tentativi falliti/);
-
-    const ultimoLog = auditLogRepo.logs[auditLogRepo.logs.length - 1];
-    expect(ultimoLog.tipoAzione).toBe(TipoAzione.ACCESSO_NEGATO);
-  });
 });

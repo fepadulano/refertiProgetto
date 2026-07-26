@@ -7,6 +7,7 @@ import { DownloadRefertoUseCase } from "../../use_cases/DownloadReferto";
 import { AuthRequest } from "../../frameworks/web/middlewares/auth.middleware"; // <-- Importa il tipo
 import { gestisciErroreHttp } from "./gestisciErroreHttp";
 import { cifraBuffer, decifraBuffer } from "../../frameworks/security/CifratoreFile";
+import { notificaPaziente } from "../../frameworks/web/socket";
 
 @injectable()
 export class RefertiController {
@@ -45,6 +46,15 @@ export class RefertiController {
         categoria,
         dataEsame: new Date(dataEsame),
         ipAddress,
+      });
+
+      // Se il paziente ha una scheda aperta in questo momento, riceve subito
+      // un avviso — senza bisogno di ricaricare la pagina. Se non è
+      // connesso, la notifica viene semplicemente persa (non è una casella
+      // persistente): il referto resta comunque consultabile come sempre.
+      notificaPaziente(nuovoReferto.pazienteId, "referto-caricato", {
+        categoria: nuovoReferto.categoria,
+        dataEsame: nuovoReferto.dataEsame,
       });
 
       res.status(201).json({

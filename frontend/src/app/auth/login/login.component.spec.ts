@@ -9,10 +9,26 @@ describe("LoginComponent", () => {
   let authServiceSpy: jasmine.SpyObj<AuthService>;
   let notificaServiceSpy: jasmine.SpyObj<NotificaService>;
   let router: Router;
+  let grecaptchaSpy: {
+    render: jasmine.Spy;
+    getResponse: jasmine.Spy;
+    reset: jasmine.Spy;
+  };
 
   beforeEach(async () => {
     authServiceSpy = jasmine.createSpyObj("AuthService", ["login"]);
     notificaServiceSpy = jasmine.createSpyObj("NotificaService", ["errore"]);
+
+    // grecaptcha è una variabile globale caricata dallo script di Google in
+    // index.html: nei test la sostituiamo con un finto. render() è già
+    // definita (grecaptcha "esiste" fin da subito), così ngAfterViewInit la
+    // chiama al primo giro del setInterval e lo cancella subito.
+    grecaptchaSpy = {
+      render: jasmine.createSpy("render"),
+      getResponse: jasmine.createSpy("getResponse").and.returnValue("token-captcha-finto"),
+      reset: jasmine.createSpy("reset"),
+    };
+    (window as unknown as { grecaptcha: unknown }).grecaptcha = grecaptchaSpy;
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
@@ -54,8 +70,25 @@ describe("LoginComponent", () => {
     expect(authServiceSpy.login).toHaveBeenCalledWith({
       email: "utente@esempio.it",
       password: "segreta1",
+      captchaToken: "token-captcha-finto",
     });
     expect(router.navigateByUrl).toHaveBeenCalledWith("/");
+  });
+
+  it("non chiama il login se il captcha non è stato completato", () => {
+    grecaptchaSpy.getResponse.and.returnValue("");
+    const fixture = crea();
+    fixture.componentInstance.form.setValue({
+      email: "utente@esempio.it",
+      password: "segreta1",
+    });
+
+    fixture.componentInstance.invia();
+
+    expect(authServiceSpy.login).not.toHaveBeenCalled();
+    expect(notificaServiceSpy.errore).toHaveBeenCalledWith(
+      "Completa la verifica captcha prima di continuare.",
+    );
   });
 
   it("in caso di errore mostra una notifica e non naviga", () => {

@@ -27,4 +27,5 @@ export const env = {
   uploadDir: process.env.UPLOAD_DIR ?? "uploads/referti",
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:4200",
   fileEncryptionKey: richiesta("FILE_ENCRYPTION_KEY"),
+  recaptchaSecretKey: richiesta("RECAPTCHA_SECRET_KEY"),
 };

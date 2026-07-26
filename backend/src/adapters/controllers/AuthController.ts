@@ -3,6 +3,7 @@ import { RegistrazionePazienteUseCase } from "../../use_cases/RegistrazionePazie
 import { injectable, inject } from "tsyringe";
 import { LoginUseCase } from "../../use_cases/Login";
 import { gestisciErroreHttp } from "./gestisciErroreHttp";
+import { verificaCaptcha } from "../../frameworks/security/VerificatoreCaptcha";
 
 @injectable()
 export class AuthController {
@@ -52,23 +53,32 @@ export class AuthController {
   public login = async (req: Request, res: Response): Promise<void> => {
     try {
       // 1. Estraiamo i dati dal client
-      const { email, password } = req.body;
+      const { email, password, captchaToken } = req.body;
       const ipAddress = req.ip || "0.0.0.0";
 
-      // 2. Chiamiamo il Caso d'Uso
+      // 2. Verifichiamo il captcha PRIMA di controllare le credenziali: se
+      // fallisce, non chiamiamo nemmeno il caso d'uso (il LoginUseCase resta
+      // ignaro dell'esistenza del captcha, è un dettaglio infrastrutturale).
+      const captchaValido = await verificaCaptcha(captchaToken);
+      if (!captchaValido) {
+        res.status(400).json({ errore: "Verifica captcha fallita, riprova." });
+        return;
+      }
+
+      // 3. Chiamiamo il Caso d'Uso
       const token = await this.loginUseCase.execute({
         email,
         passwordInChiaro: password,
         ipAddress,
       });
 
-      // 3. Rispondiamo con il Token JWT (Status 200 OK)
+      // 4. Rispondiamo con il Token JWT (Status 200 OK)
       res.status(200).json({
         messaggio: "Login effettuato con successo",
         token: token,
       });
     } catch (error) {
-      // 4. Gestione errori
+      // 5. Gestione errori
       if (error instanceof Error) {
         // Se le credenziali sono errate, il login fallisce con un 401 Unauthorized
         res.status(401).json({ errore: error.message });

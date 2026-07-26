@@ -4,6 +4,7 @@ import { RuoloUtente } from "./ruolo-utente";
 export interface LoginRequest {
   email: string;
   password: string;
+  captchaToken: string;
 }
 
 // Corpo della risposta di POST /api/auth/login (200 OK)

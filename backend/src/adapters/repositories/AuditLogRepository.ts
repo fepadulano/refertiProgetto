@@ -1,5 +1,5 @@
-import { Op, Transaction } from "sequelize";
-import { AuditLog, TipoAzione } from "../../entities/AuditLog";
+import { Transaction } from "sequelize";
+import { AuditLog } from "../../entities/AuditLog";
 import { AuditLogModel } from "../../frameworks/database/models/AuditLogModel";
 import { IAuditLogRepository, Transazione } from "../../use_cases/ports";
 
@@ -16,18 +16,5 @@ export class AuditLogRepository implements IAuditLogRepository {
       },
       { transaction: transazione as Transaction | undefined },
     );
-  }
-
-  public async contaTentativiFallitiRecenti(
-    utenteId: string,
-    dopo: Date,
-  ): Promise<number> {
-    return AuditLogModel.count({
-      where: {
-        utenteId,
-        tipoAzione: TipoAzione.LOGIN_FALLITO,
-        timestamp: { [Op.gte]: dopo },
-      },
-    });
   }
 }

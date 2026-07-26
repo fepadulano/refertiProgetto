@@ -1,23 +1,12 @@
-import {
-  Component,
-  ElementRef,
-  OnDestroy,
-  ViewChild,
-  computed,
-  effect,
-  inject,
-  signal,
-} from "@angular/core";
+import { Component, computed, effect, inject, signal } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
 import { saveAs } from "file-saver";
-import { Chart, registerables } from "chart.js";
 import { RefertiService } from "../../core/services/referti.service";
 import { FiltriStorico, Referto } from "../../core/models/referto.models";
 import { PaginatorComponent } from "../../shared/paginator/paginator.component";
 import { NotificaService } from "../../core/services/notifica.service";
-
-Chart.register(...registerables);
+import { NotificheTempoRealeService } from "../../core/services/notifiche-tempo-reale.service";
 
 @Component({
   selector: "app-storico-referti",
@@ -25,13 +14,11 @@ Chart.register(...registerables);
   templateUrl: "./storico-referti.component.html",
   styleUrl: "./storico-referti.component.css",
 })
-export class StoricoRefertiComponent implements OnDestroy {
+export class StoricoRefertiComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly refertiService = inject(RefertiService);
   private readonly notificaService = inject(NotificaService);
-
-  @ViewChild("grafico") private canvasGrafico?: ElementRef<HTMLCanvasElement>;
-  private chart?: Chart;
+  private readonly notificheTempoReale = inject(NotificheTempoRealeService);
 
   private readonly elementiPerPagina = 5;
 
@@ -55,17 +42,13 @@ export class StoricoRefertiComponent implements OnDestroy {
   });
 
   constructor() {
-    this.cerca();
-
-    // Il grafico va ridisegnato ogni volta che cambia la lista dei referti
-    // (nuova ricerca), non quando cambia solo la pagina visualizzata.
+    // Ricarica la lista al primo avvio, e di nuovo ogni volta che arriva un
+    // nuovo referto in tempo reale (senza bisogno di due meccanismi separati:
+    // l'effetto scatta comunque una prima volta appena creato).
     effect(() => {
-      this.aggiornaGrafico(this.referti());
+      this.notificheTempoReale.refertoCaricato();
+      this.cerca();
     });
-  }
-
-  public ngOnDestroy(): void {
-    this.chart?.destroy();
   }
 
   public cerca(): void {
@@ -104,44 +87,6 @@ export class StoricoRefertiComponent implements OnDestroy {
     this.refertiService.download(referto.id).subscribe({
       next: (contenuto) => saveAs(contenuto, nomeFile),
       error: () => this.notificaService.errore("Impossibile scaricare il referto."),
-    });
-  }
-
-  // Raggruppa i referti per categoria e li mostra come grafico a barre.
-  // Il canvas esiste solo quando ci sono referti da mostrare (vedi template),
-  // quindi finché non arrivano dati non c'è nulla da disegnare.
-  private aggiornaGrafico(referti: Referto[]): void {
-    const canvas = this.canvasGrafico?.nativeElement;
-    this.chart?.destroy();
-    if (!canvas || referti.length === 0) {
-      return;
-    }
-
-    const conteggiPerCategoria = new Map<string, number>();
-    for (const referto of referti) {
-      conteggiPerCategoria.set(
-        referto.categoria,
-        (conteggiPerCategoria.get(referto.categoria) ?? 0) + 1,
-      );
-    }
-
-    this.chart = new Chart(canvas, {
-      type: "bar",
-      data: {
-        labels: [...conteggiPerCategoria.keys()],
-        datasets: [
-          {
-            label: "Referti",
-            data: [...conteggiPerCategoria.values()],
-            backgroundColor: "#2c3e50",
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-      },
     });
   }
 

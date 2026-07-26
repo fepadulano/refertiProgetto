@@ -36,7 +36,7 @@ describe("E2E - /api/referti", () => {
     const admin = await creaAdminDiTest("PasswordAdmin123!");
     const loginAdmin = await request(app)
       .post("/api/auth/login")
-      .send({ email: admin.email, password: "PasswordAdmin123!" });
+      .send({ email: admin.email, password: "PasswordAdmin123!", captchaToken: "test-captcha-token" });
     const tokenAdmin = loginAdmin.body.token;
 
     // Il medico che caricherà i referti
@@ -55,7 +55,7 @@ describe("E2E - /api/referti", () => {
       });
     const loginMedico = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailMedico, password: passwordMedico });
+      .send({ email: emailMedico, password: passwordMedico, captchaToken: "test-captcha-token" });
     tokenMedico = loginMedico.body.token;
 
     // Un secondo medico, usato per verificare che NON possa scaricare
@@ -75,7 +75,7 @@ describe("E2E - /api/referti", () => {
       });
     const loginAltroMedico = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailAltroMedico, password: passwordAltroMedico });
+      .send({ email: emailAltroMedico, password: passwordAltroMedico, captchaToken: "test-captcha-token" });
     tokenAltroMedico = loginAltroMedico.body.token;
 
     // Il paziente a cui verranno associati i referti

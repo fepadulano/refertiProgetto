@@ -89,10 +89,28 @@ describe("E2E - /api/auth", () => {
 
     const risposta = await request(app)
       .post("/api/auth/login")
-      .send({ email, password });
+      .send({ email, password, captchaToken: "test-captcha-token" });
 
     expect(risposta.status).toBe(200);
     expect(typeof risposta.body.token).toBe("string");
+  });
+
+  it("rifiuta il login senza il token captcha", async () => {
+    const email = emailCasuale("paziente");
+    await request(app).post("/api/auth/registrazione-paziente").send({
+      nome: "Mario",
+      cognome: "Rossi",
+      email,
+      password,
+      codiceFiscale: codiceFiscaleCasuale(),
+      dataNascita: "1990-05-15",
+    });
+
+    const risposta = await request(app)
+      .post("/api/auth/login")
+      .send({ email, password });
+
+    expect(risposta.status).toBe(400);
   });
 
   it("rifiuta il login con la password sbagliata", async () => {
@@ -108,35 +126,8 @@ describe("E2E - /api/auth", () => {
 
     const risposta = await request(app)
       .post("/api/auth/login")
-      .send({ email, password: "PasswordSbagliata1!" });
+      .send({ email, password: "PasswordSbagliata1!", captchaToken: "test-captcha-token" });
 
     expect(risposta.status).toBe(401);
-  });
-
-  it("blocca l'account dopo troppi tentativi falliti, anche con la password corretta", async () => {
-    const email = emailCasuale("paziente");
-    await request(app).post("/api/auth/registrazione-paziente").send({
-      nome: "Mario",
-      cognome: "Rossi",
-      email,
-      password,
-      codiceFiscale: codiceFiscaleCasuale(),
-      dataNascita: "1990-05-15",
-    });
-
-    // 5 tentativi falliti consecutivi: il 6°, anche con la password giusta,
-    // deve essere rifiutato perché l'account risulta temporaneamente bloccato.
-    for (let i = 0; i < 5; i++) {
-      await request(app)
-        .post("/api/auth/login")
-        .send({ email, password: "PasswordSbagliata1!" });
-    }
-
-    const risposta = await request(app)
-      .post("/api/auth/login")
-      .send({ email, password });
-
-    expect(risposta.status).toBe(401);
-    expect(risposta.body.errore).toMatch(/troppi tentativi/i);
   });
 });

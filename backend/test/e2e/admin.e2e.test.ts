@@ -22,7 +22,7 @@ describe("E2E - /api/admin", () => {
     const admin = await creaAdminDiTest(passwordAdmin);
     const loginAdmin = await request(app)
       .post("/api/auth/login")
-      .send({ email: admin.email, password: passwordAdmin });
+      .send({ email: admin.email, password: passwordAdmin, captchaToken: "test-captcha-token" });
     tokenAdmin = loginAdmin.body.token;
 
     const emailPaziente = emailCasuale("paziente");
@@ -36,7 +36,7 @@ describe("E2E - /api/admin", () => {
     });
     const loginPaziente = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailPaziente, password: passwordPaziente });
+      .send({ email: emailPaziente, password: passwordPaziente, captchaToken: "test-captcha-token" });
     tokenPaziente = loginPaziente.body.token;
   });
 
@@ -110,7 +110,7 @@ describe("E2E - /api/admin", () => {
 
     const primoLogin = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailMedico, password: passwordMedico });
+      .send({ email: emailMedico, password: passwordMedico, captchaToken: "test-captcha-token" });
     expect(primoLogin.status).toBe(200);
 
     const disabilitazione = await request(app)
@@ -120,7 +120,7 @@ describe("E2E - /api/admin", () => {
 
     const secondoLogin = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailMedico, password: passwordMedico });
+      .send({ email: emailMedico, password: passwordMedico, captchaToken: "test-captcha-token" });
     expect(secondoLogin.status).toBe(401);
     expect(secondoLogin.body.errore).toMatch(/disabilitat/i);
   });

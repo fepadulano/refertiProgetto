@@ -14,4 +14,5 @@ export const registrazionePazienteSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().email("Email non valida"),
   password: z.string().min(1, "La password è obbligatoria"),
+  captchaToken: z.string().min(1, "Verifica captcha obbligatoria"),
 });

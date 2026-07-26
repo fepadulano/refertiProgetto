@@ -24,7 +24,7 @@ describe("E2E - /api/pazienti", () => {
     const admin = await creaAdminDiTest("PasswordAdmin123!");
     const loginAdmin = await request(app)
       .post("/api/auth/login")
-      .send({ email: admin.email, password: "PasswordAdmin123!" });
+      .send({ email: admin.email, password: "PasswordAdmin123!", captchaToken: "test-captcha-token" });
     const tokenAdmin = loginAdmin.body.token;
 
     const emailMedico = emailCasuale("medico");
@@ -42,7 +42,7 @@ describe("E2E - /api/pazienti", () => {
       });
     const loginMedico = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailMedico, password: passwordMedico });
+      .send({ email: emailMedico, password: passwordMedico, captchaToken: "test-captcha-token" });
     tokenMedico = loginMedico.body.token;
 
     codiceFiscale = codiceFiscaleCasuale();
@@ -58,7 +58,7 @@ describe("E2E - /api/pazienti", () => {
     });
     const loginPaziente = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailPaziente, password: passwordPaziente });
+      .send({ email: emailPaziente, password: passwordPaziente, captchaToken: "test-captcha-token" });
     tokenPaziente = loginPaziente.body.token;
 
     const ricerca = await request(app)
@@ -80,7 +80,7 @@ describe("E2E - /api/pazienti", () => {
     });
     const loginAltroPaziente = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailAltroPaziente, password: passwordAltroPaziente });
+      .send({ email: emailAltroPaziente, password: passwordAltroPaziente, captchaToken: "test-captcha-token" });
     tokenAltroPaziente = loginAltroPaziente.body.token;
 
     // Due referti associati al primo paziente, di categorie diverse

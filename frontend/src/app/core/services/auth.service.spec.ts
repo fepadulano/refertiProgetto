@@ -46,7 +46,7 @@ describe("AuthService", () => {
   it("dopo il login salva il token e decodifica l'utente", () => {
     const token = creaTokenFinto({ id: "123", ruolo: RuoloUtente.PAZIENTE });
 
-    service.login({ email: "a@b.it", password: "segreta1" }).subscribe();
+    service.login({ email: "a@b.it", password: "segreta1", captchaToken: "token-finto" }).subscribe();
 
     const richiesta = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
     expect(richiesta.request.method).toBe("POST");
@@ -61,7 +61,7 @@ describe("AuthService", () => {
 
   it("il logout rimuove il token e azzera l'utente corrente", () => {
     const token = creaTokenFinto({ id: "123", ruolo: RuoloUtente.MEDICO });
-    service.login({ email: "a@b.it", password: "segreta1" }).subscribe();
+    service.login({ email: "a@b.it", password: "segreta1", captchaToken: "token-finto" }).subscribe();
     httpMock
       .expectOne(`${environment.apiUrl}/auth/login`)
       .flush({ messaggio: "ok", token });
