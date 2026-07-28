@@ -9,9 +9,7 @@ interface EventoRefertoCaricato {
   dataEsame: string;
 }
 
-// Tiene aperta una connessione WebSocket verso il backend finché c'è un
-// utente loggato, per ricevere avvisi push (es. "nuovo referto caricato")
-// senza dover ricaricare la pagina o interrogare periodicamente il server.
+// connessione WebSocket aperta finché c'è un utente loggato, per ricevere avvisi push
 @Injectable({ providedIn: "root" })
 export class NotificheTempoRealeService {
   private readonly authService = inject(AuthService);
@@ -19,9 +17,7 @@ export class NotificheTempoRealeService {
 
   private socket?: Socket;
 
-  // Non serve il contenuto dell'evento, solo "sapere che è arrivato": un
-  // numero che sale ad ogni referto caricato basta a far scattare chi vi
-  // si iscrive (es. StoricoRefertiComponent, per ricaricare la lista).
+  // basta sapere che l'evento è arrivato: un contatore fa scattare chi vi si iscrive
   public readonly refertoCaricato = signal(0);
 
   constructor() {

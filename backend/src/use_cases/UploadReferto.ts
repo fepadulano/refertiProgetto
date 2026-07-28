@@ -12,12 +12,12 @@ import {
 } from "./ports";
 
 export interface UploadRefertoInput {
-  utenteId: string; // L'ID di chi sta facendo la richiesta (estratto dal token di sessione)
-  pazienteId: string; // Il paziente a cui è destinato il referto
-  percorsoFile: string; // Dove abbiamo salvato fisicamente il PDF sul server
-  categoria: string; // Es. "Radiografia"
-  dataEsame: Date; // Quando è stato eseguito l'esame (RF4), non quando viene caricato
-  ipAddress: string; // Per l'Audit Log
+  utenteId: string; // dal token JWT
+  pazienteId: string;
+  percorsoFile: string;
+  categoria: string;
+  dataEsame: Date; // quando è stato fatto l'esame, non quando viene caricato
+  ipAddress: string;
 }
 
 @injectable()
@@ -44,29 +44,26 @@ export class UploadRefertoUseCase {
       );
     }
 
-    // Creazione dell'Entità Referto
     const nuovoRefertoId = this.uuidGenerator.genera();
     const nuovoReferto = new Referto(
       nuovoRefertoId,
-      utente.profiloMedico.id, // ID specifico del medico, non dell'utente generico
+      utente.profiloMedico.id,
       input.pazienteId,
       input.percorsoFile,
       input.categoria,
       input.dataEsame,
     );
 
-    // Tracciabilità GDPR (L'impronta digitale dell'azione)
     const nuovoLogId = this.uuidGenerator.genera();
     const auditLog = new AuditLog(
       nuovoLogId,
-      utente.id, // Chi ha fatto l'azione? (ID account)
+      utente.id,
       TipoAzione.UPLOAD_REFERTO,
       input.ipAddress,
       nuovoReferto.id,
     );
 
-    // Passo 4: Persistenza — le due scritture avvengono insieme, o nessuna
-    // delle due (RNF2 - integrità e affidabilità dei dati)
+    // Le due scritture avvengono insieme, o nessuna delle due (RNF2)
     await this.gestoreTransazioni.esegui(async (transazione) => {
       await this.refertoRepo.salva(nuovoReferto, transazione);
       await this.auditLogRepo.salva(auditLog, transazione);

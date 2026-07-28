@@ -7,9 +7,7 @@ import {
   Transazione,
 } from "../../use_cases/ports";
 
-// Questa classe soddisfa i requisiti sia del caso d'uso di Upload che di quello di Download
 export class RefertoRepository implements IRefertoRepository {
-  // Salva il referto nel database (usato in UploadReferto)
   public async salva(referto: Referto, transazione?: Transazione): Promise<void> {
     await RefertoModel.create(
       {
@@ -25,7 +23,6 @@ export class RefertoRepository implements IRefertoRepository {
     );
   }
 
-  // Cerca un referto tramite il suo ID (usato in DownloadReferto)
   public async findById(id: string): Promise<Referto | null> {
     const refertoDb = await RefertoModel.findByPk(id);
 
@@ -36,7 +33,7 @@ export class RefertoRepository implements IRefertoRepository {
     return this.mappaEntita(refertoDb);
   }
 
-  // Storico referti di un paziente, dal più recente al più vecchio, con filtri opzionali (RF5/RF7)
+  // RF5/RF7: storico di un paziente, dal più recente al più vecchio, con filtri opzionali
   public async findByPazienteId(
     pazienteId: string,
     filtri?: FiltriStoricoReferti,
@@ -65,7 +62,6 @@ export class RefertoRepository implements IRefertoRepository {
     return refertiDb.map((refertoDb) => this.mappaEntita(refertoDb));
   }
 
-  // Traduce il modello Sequelize nell'Entità pura Referto
   private mappaEntita(refertoDb: RefertoModel): Referto {
     return new Referto(
       refertoDb.id as string,

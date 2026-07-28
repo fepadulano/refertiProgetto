@@ -27,8 +27,7 @@ export class LoginUseCase {
   public async execute(input: LoginInput): Promise<string> {
     const utente = await this.utenteRepo.findByEmail(input.email);
     if (!utente) {
-      // Email sconosciuta: nessun utenteId disponibile per l'audit log
-      // (utenteId è una chiave esterna obbligatoria verso la tabella utenti)
+      // email sconosciuta: niente utenteId da loggare
       throw new Error("Credenziali non valide");
     }
 

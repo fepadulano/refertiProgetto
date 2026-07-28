@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { MulterError } from "multer";
 
-// Middleware d'errore Express: deve avere esattamente 4 parametri perché
-// Express lo riconosca come error handler (vedi RNF/3.4.3: 500 come catch-all
-// che non espone mai lo stack trace al client).
+// deve avere esattamente 4 parametri perché Express lo riconosca come error handler
 export function gestoreErrori(
   err: unknown,
   _req: Request,

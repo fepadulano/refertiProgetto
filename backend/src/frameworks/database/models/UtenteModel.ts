@@ -1,7 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import { database } from "../database";
 
-// Definiamo il Modello estendendo la classe Model di Sequelize
 export class UtenteModel extends Model {
   declare id: string;
   declare nome: string;
@@ -26,7 +25,7 @@ UtenteModel.init(
     attivo: { type: DataTypes.BOOLEAN, defaultValue: true },
   },
   {
-    sequelize: database, // Passiamo la connessione che abbiamo appena testato
+    sequelize: database,
     modelName: "Utente",
     tableName: "utenti",
     timestamps: true,

@@ -12,8 +12,6 @@ import { NotificheTempoRealeService } from './core/services/notifiche-tempo-real
 export class AppComponent {
   title = 'frontend';
 
-  // L'iniezione qui basta ad "attivare" il servizio (provideIn: root, ma
-  // creato solo alla prima iniezione): da questo momento resta in ascolto
-  // per tutta la vita dell'app, indipendentemente dalla pagina visitata.
+  // l'iniezione basta ad attivare il servizio, che resta in ascolto per tutta l'app
   private readonly notificheTempoReale = inject(NotificheTempoRealeService);
 }

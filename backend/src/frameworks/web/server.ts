@@ -11,8 +11,7 @@ async function avviaServer() {
     console.log("🚀 Avvio del server in corso...");
     await inizializzaDatabase();
 
-    // Socket.io ha bisogno dell'http.Server "grezzo" (non solo dell'app
-    // Express) per potervi agganciare le connessioni WebSocket.
+    // Socket.io ha bisogno dell'http.Server grezzo, non solo dell'app Express
     const httpServer = http.createServer(app);
     inizializzaSocket(httpServer);
 

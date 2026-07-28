@@ -43,7 +43,6 @@ export class RegistrazionePazienteUseCase {
       input.passwordInChiaro,
     );
 
-    // 1. Creazione dell'Utente base (Forzando il ruolo PAZIENTE)
     const nuovoUtenteId = this.uuidGenerator.genera();
     const nuovoUtente = new Utente(
       nuovoUtenteId,
@@ -54,11 +53,9 @@ export class RegistrazionePazienteUseCase {
       RuoloUtente.PAZIENTE,
     );
 
-    // 2. Creazione del profilo clinico Paziente legato all'Utente
     const nuovoPazienteId = this.uuidGenerator.genera();
-    // Normalizzato in maiuscolo (convenzione del CF italiano): senza questo,
-    // un paziente scritto minuscolo in fase di registrazione non verrebbe
-    // più trovato da un medico che lo cerca in maiuscolo.
+    // normalizzato in maiuscolo, altrimenti un medico che cerca il CF in
+    // maiuscolo non troverebbe un paziente registrato in minuscolo
     const nuovoPaziente = new Paziente(
       nuovoPazienteId,
       nuovoUtente.id,
@@ -68,7 +65,6 @@ export class RegistrazionePazienteUseCase {
 
     nuovoUtente.profiloPaziente = nuovoPaziente;
 
-    // 3. Tracciamento dell'operazione nell'Audit Log
     const nuovoLogId = this.uuidGenerator.genera();
     const auditLog = new AuditLog(
       nuovoLogId,
@@ -78,8 +74,7 @@ export class RegistrazionePazienteUseCase {
       null,
     );
 
-    // Persistenza dei dati: le tre scritture avvengono tutte insieme,
-    // o nessuna delle tre (RNF2 - integrità e affidabilità dei dati)
+    // Le tre scritture avvengono insieme, o nessuna delle tre (RNF2)
     await this.gestoreTransazioni.esegui(async (transazione) => {
       await this.utenteRepo.salva(nuovoUtente, transazione);
       await this.pazienteRepo.salva(nuovoPaziente, transazione);

@@ -1,13 +1,15 @@
 import { Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
+import * as crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { UploadRefertoUseCase } from "../../use_cases/UploadReferto";
 import { DownloadRefertoUseCase } from "../../use_cases/DownloadReferto";
-import { AuthRequest } from "../../frameworks/web/middlewares/auth.middleware"; // <-- Importa il tipo
+import { AuthRequest } from "../../frameworks/web/middlewares/auth.middleware";
 import { gestisciErroreHttp } from "./gestisciErroreHttp";
 import { cifraBuffer, decifraBuffer } from "../../frameworks/security/CifratoreFile";
 import { notificaPaziente } from "../../frameworks/web/socket";
+import { env } from "../../frameworks/config/env";
 
 @injectable()
 export class RefertiController {
@@ -23,18 +25,15 @@ export class RefertiController {
       const utenteId = req.user?.id;
       if (!utenteId) throw new Error("Utente non autenticato");
 
-      // Il file arriva da multer (multipart/form-data), non più come stringa nel JSON
       if (!req.file) {
         res.status(400).json({ errore: "Il file PDF è obbligatorio." });
         return;
       }
 
-      // Multer ha già scritto il PDF in chiaro sul disco: lo cifriamo subito
-      // dopo, sovrascrivendolo. Da qui in poi (use case, repository, DB) tutto
-      // continua a lavorare solo con il percorso del file, senza sapere che
-      // il contenuto è cifrato.
-      const bufferInChiaro = fs.readFileSync(req.file.path);
-      fs.writeFileSync(req.file.path, cifraBuffer(bufferInChiaro));
+      // multer tiene il file in memoria: scriviamo su disco solo la versione cifrata
+      const nomeFile = `${crypto.randomUUID()}${path.extname(req.file.originalname)}`;
+      const percorsoFile = path.join(env.uploadDir, nomeFile);
+      fs.writeFileSync(percorsoFile, cifraBuffer(req.file.buffer));
 
       const { pazienteId, categoria, dataEsame } = req.body;
       const ipAddress = req.ip || "0.0.0.0";
@@ -42,16 +41,13 @@ export class RefertiController {
       const nuovoReferto = await this.uploadRefertoUseCase.execute({
         utenteId,
         pazienteId,
-        percorsoFile: req.file.path,
+        percorsoFile,
         categoria,
         dataEsame: new Date(dataEsame),
         ipAddress,
       });
 
-      // Se il paziente ha una scheda aperta in questo momento, riceve subito
-      // un avviso — senza bisogno di ricaricare la pagina. Se non è
-      // connesso, la notifica viene semplicemente persa (non è una casella
-      // persistente): il referto resta comunque consultabile come sempre.
+      // se il paziente è connesso riceve subito un avviso, altrimenti va persa
       notificaPaziente(nuovoReferto.pazienteId, "referto-caricato", {
         categoria: nuovoReferto.categoria,
         dataEsame: nuovoReferto.dataEsame,
@@ -81,9 +77,7 @@ export class RefertiController {
         ipAddress,
       });
 
-      // Il file su disco è cifrato: lo leggiamo, lo decifriamo in memoria e lo
-      // inviamo. Non possiamo usare res.download() perché legge direttamente
-      // i byte grezzi dal disco (che qui sono cifrati, non un PDF valido).
+      // niente res.download(): il file su disco è cifrato, va decifrato prima
       const bufferCifrato = fs.readFileSync(percorsoFile);
       const bufferInChiaro = decifraBuffer(bufferCifrato);
 

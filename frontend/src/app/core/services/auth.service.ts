@@ -59,8 +59,7 @@ export class AuthService {
     return this.decodificaToken(token);
   }
 
-  // Decodifica il payload del token JWT (contiene id e ruolo, messi dal
-  // backend in fase di login). jwtDecode gestisce da sola il Base64Url.
+  // il payload del token contiene id e ruolo, messi dal backend in fase di login
   private decodificaToken(token: string): UtenteAutenticato | null {
     try {
       return jwtDecode<UtenteAutenticato>(token);

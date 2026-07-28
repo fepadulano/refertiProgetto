@@ -10,9 +10,7 @@ export interface Notifica {
 
 const DURATA_MS = 5000;
 
-// Elenco condiviso di notifiche "toast": ogni pagina chiama successo()/errore()
-// invece di tenersi un proprio segnale di messaggio, così un solo componente
-// (NotificheComponent, montato una volta sola in AppComponent) le mostra tutte.
+// elenco condiviso di notifiche "toast", mostrate tutte da NotificheComponent
 @Injectable({ providedIn: "root" })
 export class NotificaService {
   private readonly prossimoId = signal(1);

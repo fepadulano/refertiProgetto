@@ -32,17 +32,14 @@ export class RefertiService {
     );
   }
 
-  // Il download richiede il token Bearer (l'interceptor lo aggiunge solo alle
-  // richieste fatte con HttpClient), quindi non possiamo usare un semplice <a href>:
-  // scarichiamo il PDF come blob e simuliamo noi il click di download.
+  // niente <a href>: serve il token Bearer, quindi scarichiamo come blob
   public download(refertoId: string): Observable<Blob> {
     return this.http.get(`${environment.apiUrl}/referti/${refertoId}/download`, {
       responseType: "blob",
     });
   }
 
-  // RF4: il Medico carica un referto per un paziente. Il backend si aspetta
-  // multipart/form-data (pazienteId, categoria, dataEsame e il file), non JSON.
+  // RF4: multipart/form-data, non JSON
   public upload(
     pazienteId: string,
     categoria: string,

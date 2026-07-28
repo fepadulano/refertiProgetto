@@ -23,7 +23,7 @@ export class PazientiController {
       const medicoUtenteId = req.user?.id;
       if (!medicoUtenteId) throw new Error("Utente non autenticato");
 
-      // codiceFiscale è già garantito presente da validaQuery in pazienti.routes.ts
+      // già validato da validaQuery in pazienti.routes.ts
       const codiceFiscale = req.query.codiceFiscale as string;
 
       const paziente = await this.ricercaPazienteUseCase.execute({

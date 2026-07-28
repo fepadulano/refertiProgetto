@@ -10,8 +10,7 @@ import { environment } from "../../../environments/environment";
 
 const CHIAVE_TOKEN = "referti_token";
 
-// jwt-decode legge solo il payload (senza verificarne la firma), quindi per
-// i test basta un token "finto" con lo stesso formato header.payload.firma.
+// jwt-decode legge solo il payload, basta un token finto in formato header.payload.firma
 function creaTokenFinto(payload: object): string {
   const parteFinta = btoa("finta");
   const parteFinta64Url = (testo: string) =>

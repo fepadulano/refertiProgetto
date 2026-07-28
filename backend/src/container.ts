@@ -1,4 +1,4 @@
-// reflect-metadata DEVE essere il primo import assoluto per far funzionare Tsyringe
+// deve essere il primo import assoluto, altrimenti Tsyringe non funziona
 import "reflect-metadata";
 import { container } from "tsyringe";
 
@@ -12,7 +12,6 @@ import { CryptoUuidGenerator } from "./frameworks/utils/CryptoUuidGenerator";
 import { JwtTokenManager } from "./frameworks/security/JwtTokenManager";
 import { SequelizeGestoreTransazioni } from "./frameworks/database/SequelizeGestoreTransazioni";
 
-// Registriamo i Token: diciamo a Tsyringe "Quando qualcuno chiede l'interfaccia X, dagli il Singleton Y"
 container.registerSingleton("IUtenteRepository", UtenteRepository);
 container.registerSingleton("IPazienteRepository", PazienteRepository);
 container.registerSingleton("IMedicoRepository", MedicoRepository);
@@ -23,5 +22,4 @@ container.registerSingleton("IUuidGenerator", CryptoUuidGenerator);
 container.registerSingleton("ITokenManager", JwtTokenManager);
 container.registerSingleton("IGestoreTransazioni", SequelizeGestoreTransazioni);
 
-// Esportiamo il container configurato
 export { container };

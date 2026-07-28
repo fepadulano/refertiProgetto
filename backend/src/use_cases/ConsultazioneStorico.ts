@@ -5,8 +5,8 @@ import { injectable, inject } from "tsyringe";
 import { IUtenteRepository, IRefertoRepository } from "./ports";
 
 export interface ConsultazioneStoricoInput {
-  utenteId: string; // Chi sta chiedendo lo storico (dal token JWT)
-  pazienteId: string; // Di quale paziente si vuole lo storico
+  utenteId: string; // chi fa la richiesta (dal token JWT)
+  pazienteId: string;
   categoria?: string;
   dataInizio?: Date;
   dataFine?: Date;
@@ -25,8 +25,7 @@ export class ConsultazioneStoricoUseCase {
       throw new Error("Utente non trovato");
     }
 
-    // Un medico può consultare lo storico di qualsiasi paziente; un paziente
-    // può consultare solo il proprio (stessa logica di autorizzazione di DownloadReferto)
+    // Un medico vede lo storico di chiunque; un paziente solo il proprio
     let autorizzato = false;
 
     if (utente.ruolo === RuoloUtente.MEDICO && utente.profiloMedico) {

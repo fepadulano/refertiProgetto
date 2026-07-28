@@ -8,8 +8,7 @@ describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
-      // AppComponent monta anche NotificheTempoRealeService, che tramite
-      // AuthService ha bisogno di HttpClient anche solo per essere creato.
+      // NotificheTempoRealeService, montato da AppComponent, ha bisogno di HttpClient
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
   });

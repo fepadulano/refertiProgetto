@@ -12,8 +12,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { NotificaService } from '../../core/services/notifica.service';
 import { environment } from '../../../environments/environment';
 
-// grecaptcha è una variabile globale creata dallo script di Google in
-// index.html: non è un modulo npm, non si importa.
+// variabile globale creata dallo script di Google in index.html, non un modulo npm
 declare const grecaptcha: {
   render(container: HTMLElement, parametri: { sitekey: string }): void;
   getResponse(): string;
@@ -43,8 +42,7 @@ export class LoginComponent implements AfterViewInit {
     password: ['', Validators.required],
   });
 
-  // Il div esiste già a questo punto, ma lo script di Google (caricato in
-  // modo asincrono) potrebbe non esserlo ancora: aspettiamo che compaia.
+  // il div esiste già, ma lo script async di Google potrebbe non esserlo ancora
   public ngAfterViewInit(): void {
     const intervallo = setInterval(() => {
       if (typeof grecaptcha === 'undefined') {

@@ -4,7 +4,7 @@ import { injectable, inject } from "tsyringe";
 import { IUtenteRepository, IPazienteRepository } from "./ports";
 
 export interface RicercaPazienteInput {
-  medicoUtenteId: string; // Chi sta cercando (dal token JWT)
+  medicoUtenteId: string; // dal token JWT
   codiceFiscale: string;
 }
 
@@ -34,9 +34,7 @@ export class RicercaPazienteUseCase {
       );
     }
 
-    // Stessa normalizzazione applicata in fase di registrazione: senza
-    // questo, una differenza di maiuscole/minuscole o spazi farebbe
-    // fallire la ricerca anche per un paziente esistente.
+    // stessa normalizzazione usata in registrazione, altrimenti la ricerca fallirebbe
     const paziente = await this.pazienteRepo.findByCodiceFiscale(
       input.codiceFiscale.trim().toUpperCase(),
     );

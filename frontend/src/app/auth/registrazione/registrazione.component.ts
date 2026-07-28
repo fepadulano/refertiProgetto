@@ -19,8 +19,7 @@ export class RegistrazioneComponent {
   public readonly inCorso = signal(false);
   public readonly registrazioneCompletata = signal(false);
 
-  // Gli stessi vincoli usati dal backend (authValidators.ts), così l'utente
-  // vede subito l'errore senza dover aspettare la risposta del server.
+  // stessi vincoli usati dal backend (authValidators.ts)
   public readonly form = this.formBuilder.nonNullable.group({
     nome: ["", Validators.required],
     cognome: ["", Validators.required],
@@ -33,8 +32,7 @@ export class RegistrazioneComponent {
     dataNascita: ["", Validators.required],
   });
 
-  // Il codice fiscale si scrive per convenzione in maiuscolo: lo trasformiamo
-  // mentre l'utente digita, così quello che vede è già quello che verrà salvato.
+  // trasformato mentre l'utente digita, per convenzione del CF italiano
   public maiuscoloCF(): void {
     const valore = this.form.controls.codiceFiscale.value;
     this.form.controls.codiceFiscale.setValue(valore.toUpperCase(), {

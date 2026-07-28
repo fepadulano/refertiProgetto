@@ -10,9 +10,9 @@ import {
 } from "./ports";
 
 export interface DownloadRefertoInput {
-  utenteId: string; // Chi sta chiedendo il file (dal token JWT)
-  refertoId: string; // L'UUID del file richiesto
-  ipAddress: string; // Per l'Audit Log
+  utenteId: string; // dal token JWT
+  refertoId: string;
+  ipAddress: string;
 }
 
 @injectable()
@@ -24,9 +24,8 @@ export class DownloadRefertoUseCase {
     @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
   ) {}
 
-  // ritorna una stringa (il percorso fisico del file sul server) in modo che Express possa poi inviare il PDF
+  // ritorna il percorso fisico del file, così il controller può inviarlo
   public async execute(input: DownloadRefertoInput): Promise<string> {
-    // 1. Cerchiamo chi fa la richiesta e cosa sta cercando
     const utente = await this.utenteRepo.findByIdConProfilo(input.utenteId);
     const referto = await this.refertoRepo.findById(input.refertoId);
 
@@ -36,21 +35,17 @@ export class DownloadRefertoUseCase {
     let autorizzato = false;
 
     if (utente.ruolo === RuoloUtente.MEDICO && utente.profiloMedico) {
-      // È un medico: il SUO ID medico deve combaciare con il medico_id del referto
       autorizzato = utente.profiloMedico.id === referto.medicoId;
     } else if (
       utente.ruolo === RuoloUtente.PAZIENTE &&
       utente.profiloPaziente
     ) {
-      // È un paziente: il SUO ID paziente deve combaciare con il paziente_id del referto
       autorizzato = utente.profiloPaziente.id === referto.pazienteId;
     }
 
-    // 3. REGISTRAZIONE NELL'AUDIT LOG (GDPR)
     const nuovoLogId = this.uuidGenerator.genera();
 
     if (!autorizzato) {
-      // Registriamo il tentativo illecito (o l'errore) e blocchiamo l'esecuzione
       const logViolazione = new AuditLog(
         nuovoLogId,
         utente.id,
@@ -64,7 +59,6 @@ export class DownloadRefertoUseCase {
       );
     }
 
-    // Se arriviamo qui, l'utente è autorizzato. Registriamo il download legittimo.
     const logSuccesso = new AuditLog(
       nuovoLogId,
       utente.id,
@@ -74,7 +68,6 @@ export class DownloadRefertoUseCase {
     );
     await this.auditLogRepo.salva(logSuccesso);
 
-    // 4. Ritorniamo il percorso in modo che il controller possa spedire il file
     return referto.percorsoFile;
   }
 }

@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodType } from "zod";
 
-// Valida req.body contro uno schema zod PRIMA che la richiesta raggiunga
-// il controller (approccio Fail-Fast, vedi tesi 3.5.3): se i dati sono
-// malformati, si risponde subito 400 senza mai chiamare il caso d'uso.
+// valida req.body prima che la richiesta raggiunga il controller (fail-fast)
 export function validaBody(schema: ZodType) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const risultato = schema.safeParse(req.body);
@@ -18,7 +16,7 @@ export function validaBody(schema: ZodType) {
   };
 }
 
-// Stessa idea, ma per i parametri della query string (es. ?codiceFiscale=...)
+// stessa idea, ma per la query string (es. ?codiceFiscale=...)
 export function validaQuery(schema: ZodType) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const risultato = schema.safeParse(req.query);

@@ -23,9 +23,7 @@ export function inizializzaSocket(httpServer: HttpServer): SocketServer {
     cors: { origin: env.corsOrigin },
   });
 
-  // Verifica il token JWT al momento della connessione, sullo stesso
-  // principio di abilitaProtezioneJwt per le richieste HTTP: nessuna
-  // connessione anonima è ammessa.
+  // stesso principio di abilitaProtezioneJwt per le richieste HTTP
   io.use((socket, next) => {
     const token = socket.handshake.auth?.["token"] as string | undefined;
     if (!token) {
@@ -43,8 +41,7 @@ export function inizializzaSocket(httpServer: HttpServer): SocketServer {
   });
 
   io.on("connection", async (socket: Socket) => {
-    // Solo i pazienti ricevono notifiche in tempo reale, per ora: è a loro
-    // che serve sapere quando un medico carica un nuovo referto.
+    // per ora solo i pazienti ricevono notifiche in tempo reale
     if (socket.data.ruolo !== RuoloUtente.PAZIENTE) {
       return;
     }
@@ -77,10 +74,7 @@ function rimuoviSocket(pazienteId: string, socketId: string): void {
   socketPerPaziente.get(pazienteId)?.delete(socketId);
 }
 
-// Notifica in tempo reale il paziente proprietario del referto, se in
-// questo momento ha almeno una connessione attiva. Se non è connesso (app
-// chiusa), la notifica viene semplicemente persa: non esiste una "casella"
-// che la conserva per quando tornerà online.
+// se il paziente non è connesso, la notifica va semplicemente persa
 export function notificaPaziente(
   pazienteId: string,
   evento: string,

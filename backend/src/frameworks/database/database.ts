@@ -4,7 +4,7 @@ import { PazienteModel } from "../database/models/PazienteModel";
 import { MedicoModel } from "../database/models/MedicoModel";
 import { env } from "../config/env";
 
-// Creiamo la connessione (usando Postgres invece di SQLite per via dei requisiti medici)
+// Postgres invece di SQLite per via dei requisiti medici
 export const database = new Sequelize(
   env.db.nome,
   env.db.utente,
@@ -21,11 +21,7 @@ export async function inizializzaDatabase() {
     await database.authenticate();
     console.log("📦 Connessione a PostgreSQL stabilita.");
 
-    // Lo schema del database non viene più sincronizzato automaticamente
-    // (sync({alter:true})): è gestito da migrazioni versionate
-    // (src/frameworks/database/migrations/), eseguite a parte con
-    // "npx sequelize-cli db:migrate" prima di avviare l'app o i test.
-
+    // schema gestito da migrazioni versionate ("npx sequelize-cli db:migrate"), non più da sync({alter:true})
     await rendiAuditLogImmutabile();
     console.log("🔒 Vincolo di sola-scrittura su audit_logs applicato.");
   } catch (error) {
@@ -33,12 +29,8 @@ export async function inizializzaDatabase() {
   }
 }
 
-// RNF3 (tracciabilità e non-ripudio): audit_logs deve essere append-only,
-// e nessun attore (nemmeno un amministratore di database) deve poter
-// modificare o cancellare un log già scritto. Un vincolo lato applicazione
-// non basta, perché chi ha accesso diretto al database lo aggirerebbe
-// con una query SQL: serve un trigger nel database stesso, che blocca
-// UPDATE e DELETE indipendentemente da chi si è connesso.
+// RNF3: audit_logs deve essere append-only anche per chi ha accesso diretto
+// al DB, quindi il vincolo va messo a livello di trigger, non di applicazione
 async function rendiAuditLogImmutabile() {
   await database.query(`
     CREATE OR REPLACE FUNCTION blocca_modifica_audit_log()

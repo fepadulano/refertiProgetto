@@ -1,12 +1,7 @@
-// Token di transazione "opaco": i use case lo ricevono e lo ripassano ai
-// repository senza mai sapere cosa contiene davvero (è Sequelize a darci
-// un significato concreto, nello strato Frameworks & Drivers).
+// opaco per i use case: solo Sequelize sa cosa contiene davvero
 export type Transazione = unknown;
 
 export interface IGestoreTransazioni {
-  // Esegue "operazione" dentro un'unica transazione RDBMS (RNF2): se
-  // operazione lancia un errore, tutte le scritture fatte fino a quel
-  // punto vengono annullate automaticamente (rollback), invece di
-  // lasciare nel database uno stato parziale.
+  // se operazione lancia un errore, fa rollback di tutte le scritture (RNF2)
   esegui<T>(operazione: (transazione: Transazione) => Promise<T>): Promise<T>;
 }

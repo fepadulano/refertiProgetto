@@ -3,10 +3,7 @@ import { authGuard } from "./core/guards/auth.guard";
 import { ruoloGuard } from "./core/guards/ruolo.guard";
 import { RuoloUtente } from "./core/models/ruolo-utente";
 
-// Ogni pagina viene scaricata dal browser solo quando l'utente ci naviga
-// davvero (lazy loading), invece di scaricare tutto il codice dell'app fin
-// dal primo caricamento. loadComponent sostituisce "component" con una
-// funzione che importa il file solo al momento del bisogno.
+// lazy loading: loadComponent importa il file solo quando l'utente ci naviga
 export const routes: Routes = [
   {
     path: "login",

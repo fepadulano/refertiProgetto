@@ -19,10 +19,8 @@ describe("LoginComponent", () => {
     authServiceSpy = jasmine.createSpyObj("AuthService", ["login"]);
     notificaServiceSpy = jasmine.createSpyObj("NotificaService", ["errore"]);
 
-    // grecaptcha è una variabile globale caricata dallo script di Google in
-    // index.html: nei test la sostituiamo con un finto. render() è già
-    // definita (grecaptcha "esiste" fin da subito), così ngAfterViewInit la
-    // chiama al primo giro del setInterval e lo cancella subito.
+    // finto grecaptcha: render() già definita, così ngAfterViewInit la
+    // chiama al primo giro del setInterval e lo cancella subito
     grecaptchaSpy = {
       render: jasmine.createSpy("render"),
       getResponse: jasmine.createSpy("getResponse").and.returnValue("token-captcha-finto"),

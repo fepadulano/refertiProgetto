@@ -10,8 +10,8 @@ import {
 } from "./ports";
 
 export interface DisabilitaMedicoInput {
-  adminId: string; // Chi compie l'azione (dal token JWT)
-  medicoUtenteId: string; // ID Utente del medico da disabilitare
+  adminId: string; // dal token JWT
+  medicoUtenteId: string;
   ipAddress: string;
 }
 

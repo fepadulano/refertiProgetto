@@ -13,7 +13,7 @@ import {
 } from "./ports";
 
 export interface CreaMedicoInput {
-  adminId: string; // ID dell'amministratore che sta compiendo l'azione (per il Log)
+  adminId: string; // chi compie l'azione (per il log)
   nome: string;
   cognome: string;
   email: string;
@@ -36,7 +36,6 @@ export class CreaMedicoUseCase {
   ) {}
 
   public async execute(input: CreaMedicoInput): Promise<Utente> {
-    // 1. Controllo autorizzazione: l'utente che crea deve esistere ed essere un ADMIN
     const responsabile = await this.utenteRepo.findById(input.adminId);
     if (!responsabile || responsabile.ruolo !== RuoloUtente.ADMIN) {
       throw new ErroreAutorizzazione(
@@ -53,7 +52,6 @@ export class CreaMedicoUseCase {
       input.passwordInChiaro,
     );
 
-    // 2. Creazione dell'Utente base (Forzando il ruolo MEDICO)
     const nuovoUtenteId = this.uuidGenerator.genera();
     const nuovoUtente = new Utente(
       nuovoUtenteId,
@@ -64,7 +62,6 @@ export class CreaMedicoUseCase {
       RuoloUtente.MEDICO,
     );
 
-    // 3. Creazione del profilo professionale Medico legato all'Utente
     const nuovoMedicoId = this.uuidGenerator.genera();
     const nuovoMedico = new Medico(
       nuovoMedicoId,
@@ -75,7 +72,6 @@ export class CreaMedicoUseCase {
 
     nuovoUtente.profiloMedico = nuovoMedico;
 
-    // 4. Tracciamento dell'operazione nell'Audit Log (associato all'ID dell'admin che ha agito)
     const nuovoLogId = this.uuidGenerator.genera();
     const auditLog = new AuditLog(
       nuovoLogId,
@@ -85,8 +81,7 @@ export class CreaMedicoUseCase {
       null,
     );
 
-    // Persistenza dei dati: le tre scritture avvengono tutte insieme,
-    // o nessuna delle tre (RNF2 - integrità e affidabilità dei dati)
+    // Le tre scritture avvengono insieme, o nessuna delle tre (RNF2)
     await this.gestoreTransazioni.esegui(async (transazione) => {
       await this.utenteRepo.salva(nuovoUtente, transazione);
       await this.medicoRepo.salva(nuovoMedico, transazione);

@@ -5,8 +5,7 @@ export class SequelizeGestoreTransazioni implements IGestoreTransazioni {
   public async esegui<T>(
     operazione: (transazione: Transazione) => Promise<T>,
   ): Promise<T> {
-    // database.transaction si occupa di tutto: se "operazione" va a buon
-    // fine fa la COMMIT, se lancia un errore fa la ROLLBACK automaticamente
+    // commit se operazione va a buon fine, rollback automatico se lancia un errore
     return database.transaction((t) => operazione(t));
   }
 }

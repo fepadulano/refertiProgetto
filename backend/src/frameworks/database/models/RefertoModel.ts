@@ -21,7 +21,7 @@ RefertoModel.init(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: "medici", // Punta alla tabella fisica dei medici
+        model: "medici",
         key: "id",
       },
     },
@@ -29,7 +29,7 @@ RefertoModel.init(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: "pazienti", // Punta alla tabella fisica dei pazienti
+        model: "pazienti",
         key: "id",
       },
     },
@@ -44,9 +44,7 @@ RefertoModel.init(
     dataEsame: {
       type: DataTypes.DATE,
       allowNull: false,
-      // Il default serve solo in fase di migrazione, per non rompere le righe
-      // già esistenti create prima dell'introduzione di questo campo: ogni
-      // nuovo referto passa sempre un valore esplicito, mai quello di default.
+      // il default serve solo alla migrazione, un nuovo referto passa sempre un valore esplicito
       defaultValue: DataTypes.NOW,
     },
     dataCaricamento: {
@@ -58,6 +56,6 @@ RefertoModel.init(
     sequelize: database,
     modelName: "Referto",
     tableName: "referti",
-    timestamps: false, // Disabilitato perché gestiamo la data tramite "dataCaricamento" dell'entità
+    timestamps: false, // la data è gestita da "dataCaricamento" dell'entità
   },
 );

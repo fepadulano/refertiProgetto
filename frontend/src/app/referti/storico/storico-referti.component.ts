@@ -42,9 +42,7 @@ export class StoricoRefertiComponent {
   });
 
   constructor() {
-    // Ricarica la lista al primo avvio, e di nuovo ogni volta che arriva un
-    // nuovo referto in tempo reale (senza bisogno di due meccanismi separati:
-    // l'effetto scatta comunque una prima volta appena creato).
+    // ricarica al primo avvio e ad ogni nuovo referto in tempo reale
     effect(() => {
       this.notificheTempoReale.refertoCaricato();
       this.cerca();
@@ -79,8 +77,7 @@ export class StoricoRefertiComponent {
   }
 
   public scarica(referto: Referto): void {
-    // Il server salva il PDF con un nome interno anonimo (un UUID): qui ne
-    // generiamo uno leggibile per l'utente, invece di usare quello del server.
+    // il server salva il PDF con un nome interno anonimo (UUID), qui ne generiamo uno leggibile
     const data = referto.dataEsame.slice(0, 10); // "YYYY-MM-DD"
     const nomeFile = `referto-${referto.categoria}-${data}.pdf`;
 
@@ -90,8 +87,7 @@ export class StoricoRefertiComponent {
     });
   }
 
-  // Estrae il valore dei filtri, escludendo i campi lasciati vuoti
-  // (altrimenti manderemmo al backend "categoria=" invece di ometterla)
+  // esclude i campi vuoti, altrimenti manderemmo al backend "categoria=" invece di ometterla
   private leggiFiltri(): FiltriStorico {
     const valori = this.filtri.getRawValue();
     const filtri: FiltriStorico = {};

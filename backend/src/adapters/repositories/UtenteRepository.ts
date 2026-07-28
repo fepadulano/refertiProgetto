@@ -8,13 +8,11 @@ import { UtenteModel } from "../../frameworks/database/models/UtenteModel";
 import { IUtenteRepository, Transazione } from "../../use_cases/ports";
 
 export class UtenteRepository implements IUtenteRepository {
-  // Controlla se un'email è già registrata (usato sia da Paziente che da Medico)
   public async esisteEmail(email: string): Promise<boolean> {
     const count = await UtenteModel.count({ where: { email } });
     return count > 0;
   }
 
-  // Salva l'entità pura nel database usando Sequelize
   public async salva(utente: Utente, transazione?: Transazione): Promise<void> {
     await UtenteModel.create(
       {
@@ -30,7 +28,6 @@ export class UtenteRepository implements IUtenteRepository {
     );
   }
 
-  // Persiste modifiche di stato su un utente esistente (es. disabilitazione account)
   public async aggiorna(
     utente: Utente,
     transazione?: Transazione,
@@ -44,7 +41,6 @@ export class UtenteRepository implements IUtenteRepository {
     );
   }
 
-  // Cerca un utente per ID (serve al CreaMedicoUseCase per verificare se chi crea è un ADMIN)
   public async findById(id: string): Promise<Utente | null> {
     const utenteDb = await UtenteModel.findByPk(id);
 
@@ -52,7 +48,6 @@ export class UtenteRepository implements IUtenteRepository {
       return null;
     }
 
-    // Se lo trova nel DB, lo "traduce" di nuovo nell'Entità pura per i Casi d'Uso
     return new Utente(
       utenteDb.id as string,
       utenteDb.nome as string,
@@ -64,7 +59,6 @@ export class UtenteRepository implements IUtenteRepository {
     );
   }
 
-  // Serve al LoginUseCase per trovare l'utente dalla sua email
   public async findByEmail(email: string): Promise<Utente | null> {
     const utenteDb = await UtenteModel.findOne({ where: { email } });
     if (!utenteDb) return null;
@@ -80,12 +74,11 @@ export class UtenteRepository implements IUtenteRepository {
     );
   }
 
-  // Serve a Upload/Download Referto per avere l'Utente con il suo profilo Medico o Paziente allegato
+  // include il profilo Medico o Paziente allegato
   public async findByIdConProfilo(id: string): Promise<Utente | null> {
     const utente = await this.findById(id);
     if (!utente) return null;
 
-    // Se è medico, andiamo a pescargli il profilo medico
     if (utente.ruolo === RuoloUtente.MEDICO) {
       const medicoDb = await MedicoModel.findOne({
         where: { utenteId: utente.id },
@@ -100,7 +93,6 @@ export class UtenteRepository implements IUtenteRepository {
       }
     }
 
-    // Se è paziente, andiamo a pescargli il profilo paziente
     if (utente.ruolo === RuoloUtente.PAZIENTE) {
       const pazienteDb = await PazienteModel.findOne({
         where: { utenteId: utente.id },
@@ -118,8 +110,7 @@ export class UtenteRepository implements IUtenteRepository {
     return utente;
   }
 
-  // Serve alla schermata admin "elenco medici": tutti gli utenti MEDICO,
-  // ciascuno con il proprio profilo (specializzazione, numero matricola) allegato
+  // tutti gli utenti MEDICO, ciascuno con il proprio profilo allegato
   public async findTuttiMediciConProfilo(): Promise<Utente[]> {
     const utentiDb = await UtenteModel.findAll({
       where: { ruolo: RuoloUtente.MEDICO },

@@ -54,21 +54,16 @@ export class CaricaRefertoComponent {
   });
 
   constructor() {
-    // Ricerca "live": appena il codice fiscale digitato ha 16 caratteri validi,
-    // la ricerca parte da sola, senza bisogno di premere un pulsante.
+    // ricerca live: appena il CF digitato ha 16 caratteri validi, parte da sola
     this.formRicerca.controls.codiceFiscale.valueChanges
       .pipe(
-        debounceTime(400), // aspetta una piccola pausa nella digitazione
-        distinctUntilChanged(), // non ripetere la stessa ricerca due volte di fila
+        debounceTime(400),
+        distinctUntilChanged(),
         filter(() => this.formRicerca.controls.codiceFiscale.valid),
-        // Leggiamo il valore direttamente dal controllo (non quello emesso
-        // dall'evento) per essere certi di usare la versione già maiuscola,
-        // già applicata in sincrono da maiuscoloCF() prima che questo scatti.
+        // leggiamo dal controllo, non dall'evento, per avere già la versione maiuscola
         switchMap(() => {
           const codiceFiscale = this.formRicerca.controls.codiceFiscale.value;
-          // switchMap annulla automaticamente una ricerca precedente ancora in
-          // corso se nel frattempo l'utente digita un codice fiscale diverso:
-          // evita che una risposta "vecchia" arrivi dopo una più recente.
+          // switchMap annulla la ricerca precedente se l'utente digita ancora
           this.ricercaInCorso.set(true);
           this.pazienteTrovato.set(null);
           this.resettaFormUpload();

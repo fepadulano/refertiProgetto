@@ -10,8 +10,6 @@ import {
 
 export const authRouter = Router();
 
-// Chiediamo a Tsyringe di "risolvere" l'AuthController.
-// Lui capisce da solo che gli serve il Caso d'Uso, a cui servono i 5 repository, li crea tutti in memoria e ce li restituisce pronti!
 const authController = container.resolve(AuthController);
 
 authRouter.post(

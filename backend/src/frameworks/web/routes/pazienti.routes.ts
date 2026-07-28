@@ -20,8 +20,7 @@ pazientiRouter.get(
   pazientiController.cerca,
 );
 
-// GET /api/pazienti/me/referti?categoria=...&dataInizio=...&dataFine=... (RF5/RF7, solo Paziente)
-// Deve stare PRIMA di "/:id/referti", altrimenti Express interpreterebbe "me" come :id
+// deve stare prima di "/:id/referti", altrimenti Express interpreta "me" come :id
 pazientiRouter.get(
   "/me/referti",
   abilitaProtezioneJwt,

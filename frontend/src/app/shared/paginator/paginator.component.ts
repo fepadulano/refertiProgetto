@@ -1,7 +1,6 @@
 import { Component, input, output } from "@angular/core";
 
-// Componente generico: non sa nulla di medici o referti, riceve solo numeri
-// e segnala il cambio pagina al genitore tramite un evento.
+// generico: non sa nulla di medici o referti, riceve solo numeri
 @Component({
   selector: "app-paginator",
   imports: [],
