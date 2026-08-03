@@ -23,7 +23,7 @@ async function avviaServer() {
       console.log(`   - http://localhost:${PORT}/api/admin`);
     });
   } catch (error) {
-    console.error("❌ Errore critico durante l'avvio del server:", error);
+    console.error("Errore critico durante l'avvio del server:", error);
     process.exit(1);
   }
 }

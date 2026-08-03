@@ -41,7 +41,8 @@ export class RefertoRepository implements IRefertoRepository {
     const where: WhereOptions = { pazienteId };
 
     if (filtri?.categoria) {
-      where.categoria = filtri.categoria;
+      // case-insensitive: "radiografia" e "Radiografia" sono la stessa categoria
+      where.categoria = { [Op.iLike]: filtri.categoria.trim() };
     }
 
     if (filtri?.dataInizio && filtri?.dataFine) {

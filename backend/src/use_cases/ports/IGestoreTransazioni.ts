@@ -1,4 +1,3 @@
-// opaco per i use case: solo Sequelize sa cosa contiene davvero
 export type Transazione = unknown;
 
 export interface IGestoreTransazioni {

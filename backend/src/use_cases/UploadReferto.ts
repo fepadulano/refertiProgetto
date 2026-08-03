@@ -50,7 +50,7 @@ export class UploadRefertoUseCase {
       utente.profiloMedico.id,
       input.pazienteId,
       input.percorsoFile,
-      input.categoria,
+      input.categoria.trim(),
       input.dataEsame,
     );
 

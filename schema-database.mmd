@@ -1,0 +1,49 @@
+classDiagram
+    class Utente {
+        +UUID id
+        +String nome
+        +String cognome
+        +String email
+        +String passwordHash
+        +String ruolo
+        +Boolean attivo
+        +DateTime createdAt
+    }
+    class Medico {
+        +UUID id
+        +UUID utenteId
+        +String numeroMatricola
+        +String specializzazione
+        +DateTime createdAt
+    }
+    class Paziente {
+        +UUID id
+        +UUID utenteId
+        +String codiceFiscale
+        +Date dataNascita
+        +DateTime createdAt
+    }
+    class Referto {
+        +UUID id
+        +UUID medicoId
+        +UUID pazienteId
+        +String percorsoFile
+        +String categoria
+        +DateTime dataEsame
+        +DateTime dataCaricamento
+    }
+    class AuditLog {
+        +UUID id
+        +UUID utenteId
+        +String tipoAzione
+        +String ipAddress
+        +UUID refertoId
+        +DateTime timestamp
+    }
+
+    Utente "1" -- "0..1" Medico : ha profilo
+    Utente "1" -- "0..1" Paziente : ha profilo
+    Medico "1" -- "0..*" Referto : carica
+    Paziente "1" -- "0..*" Referto : riceve
+    Utente "1" -- "0..*" AuditLog : genera
+    Referto "0..1" -- "0..*" AuditLog : riguarda

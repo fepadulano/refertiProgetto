@@ -2,9 +2,8 @@ import { env } from "../config/env";
 
 const URL_VERIFICA = "https://www.google.com/recaptcha/api/siteverify";
 
-// Chiede a Google se il token risolto dall'utente nel form di login e'
-// valido. E' una verifica verso un servizio esterno (framework detail),
-// per questo vive qui e non nel LoginUseCase, che resta puro.
+// chiede a Google se il token risolto dall'utente nel form di login è
+// valido.
 export async function verificaCaptcha(token: string): Promise<boolean> {
   const risposta = await fetch(URL_VERIFICA, {
     method: "POST",
