@@ -4,5 +4,8 @@
 *.tex
 tesi-di-riferimento/
 
+# Eccezione: PDF finto usato come fixture nei test Playwright, è codice di test
+!frontend/e2e/fixtures/*.pdf
+
 # Configurazione locale di Claude Code
 .claude/
