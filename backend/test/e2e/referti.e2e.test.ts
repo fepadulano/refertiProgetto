@@ -13,15 +13,12 @@ import {
 const pdfFinto = Buffer.from("%PDF-1.4 contenuto finto per i test");
 
 // Il download restituisce un PDF (binario), non JSON/testo: superagent non lo
-// bufferizza automaticamente, quindi serve un parser esplicito per poterne
-// confrontare i byte con quelli originali caricati.
+// bufferizza automaticamente, quindi raccogliamo noi i pezzi (Buffer) e li
+// uniamo alla fine con Buffer.concat, senza passare da nessuna stringa.
 function parserBinario(res: Response, callback: (err: Error | null, body: Buffer) => void): void {
-  res.setEncoding("binary");
-  let dati = "";
-  res.on("data", (chunk: string) => {
-    dati += chunk;
-  });
-  res.on("end", () => callback(null, Buffer.from(dati, "binary")));
+  const pezzi: Buffer[] = [];
+  res.on("data", (pezzo: Buffer) => pezzi.push(pezzo));
+  res.on("end", () => callback(null, Buffer.concat(pezzi)));
 }
 
 describe("E2E - /api/referti", () => {
@@ -194,7 +191,8 @@ describe("E2E - /api/referti", () => {
     // Sul disco non deve esserci un PDF in chiaro (l'intestazione "%PDF-" non
     // deve comparire): il contenuto è cifrato (AES-256-GCM).
     const contenutoSuDisco = fs.readFileSync(percorsoFile);
-    expect(contenutoSuDisco.toString("latin1", 0, 5)).not.toBe("%PDF-");
+    const intestazionePdf = Buffer.from("%PDF-");
+    expect(contenutoSuDisco.subarray(0, 5).equals(intestazionePdf)).toBe(false);
 
     const download = await request(app)
       .get(`/api/referti/${refertoId}/download`)

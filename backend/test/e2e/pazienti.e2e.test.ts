@@ -143,7 +143,9 @@ describe("E2E - /api/pazienti", () => {
       .set("Authorization", `Bearer ${tokenPaziente}`);
 
     expect(risposta.status).toBe(200);
-    expect(risposta.body.referti.length).toBeGreaterThanOrEqual(2);
+    // "Esami del sangue" è stato caricato per secondo: deve comparire per primo
+    expect(risposta.body.referti[0].categoria).toBe("Esami del sangue");
+    expect(risposta.body.referti[1].categoria).toBe("Radiologia");
   });
 
   it("filtra lo storico per categoria (RF7)", async () => {
