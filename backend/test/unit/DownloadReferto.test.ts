@@ -124,6 +124,7 @@ describe("DownloadRefertoUseCase (unit, con repository finti)", () => {
     });
 
     expect(percorso).toBe("uploads/referti/finto.pdf");
+    expect(auditLogRepo.logs).toHaveLength(1);
     expect(auditLogRepo.logs[0].tipoAzione).toBe(TipoAzione.DOWNLOAD_REFERTO);
   });
 
@@ -149,6 +150,7 @@ describe("DownloadRefertoUseCase (unit, con repository finti)", () => {
       }),
     ).rejects.toThrow(ErroreAutorizzazione);
 
+    expect(auditLogRepo.logs).toHaveLength(1);
     expect(auditLogRepo.logs[0].tipoAzione).toBe(TipoAzione.ACCESSO_NEGATO);
   });
 

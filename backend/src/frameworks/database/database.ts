@@ -4,7 +4,6 @@ import { PazienteModel } from "../database/models/PazienteModel";
 import { MedicoModel } from "../database/models/MedicoModel";
 import { env } from "../config/env";
 
-// Postgres invece di SQLite per via dei requisiti medici
 export const database = new Sequelize(
   env.db.nome,
   env.db.utente,
