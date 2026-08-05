@@ -17,8 +17,9 @@ PazienteModel.init(
     utenteId: {
       type: DataTypes.UUID,
       allowNull: false,
+      unique: true,
       references: {
-        model: "utenti", // Si collega alla tabella utenti
+        model: "utenti",
         key: "id",
       },
     },

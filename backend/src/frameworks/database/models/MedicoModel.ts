@@ -17,6 +17,7 @@ MedicoModel.init(
     utenteId: {
       type: DataTypes.UUID,
       allowNull: false,
+      unique: true,
       references: {
         model: "utenti",
         key: "id",
