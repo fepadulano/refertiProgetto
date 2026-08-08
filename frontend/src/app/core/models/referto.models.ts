@@ -1,16 +1,18 @@
+import { CategoriaReferto } from "./categoria-referto";
+
 // Corrisponde all'entità Referto del backend (vedi backend/src/entities/Referto.ts)
 export interface Referto {
   id: string;
   medicoId: string;
   pazienteId: string;
-  categoria: string;
+  categoria: CategoriaReferto;
   dataEsame: string;
   dataCaricamento: string;
 }
 
 // Filtri opzionali per GET /api/pazienti/me/referti
 export interface FiltriStorico {
-  categoria?: string;
+  categoria?: CategoriaReferto;
   dataInizio?: string; // formato "YYYY-MM-DD"
   dataFine?: string; // formato "YYYY-MM-DD"
 }

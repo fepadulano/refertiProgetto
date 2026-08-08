@@ -6,12 +6,14 @@ import { environment } from "../../../environments/environment";
 import {
   LoginRequest,
   LoginResponse,
+  RefreshResponse,
   RegistrazioneRequest,
   RegistrazioneResponse,
   UtenteAutenticato,
 } from "../models/auth.models";
 
 const CHIAVE_TOKEN = "referti_token";
+const CHIAVE_REFRESH_TOKEN = "referti_refresh_token";
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
@@ -25,6 +27,17 @@ export class AuthService {
   public login(dati: LoginRequest): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>(`${environment.apiUrl}/auth/login`, dati)
+      .pipe(tap((risposta) => this.salvaSessione(risposta.token, risposta.refreshToken)));
+  }
+
+  // Scambia il refresh token per un nuovo access token, senza richiedere
+  // di nuovo email/password/captcha: usato dall'interceptor quando il
+  // token in uso scade (vedi errore.interceptor.ts).
+  public refreshToken(): Observable<RefreshResponse> {
+    return this.http
+      .post<RefreshResponse>(`${environment.apiUrl}/auth/refresh`, {
+        refreshToken: this.getRefreshToken(),
+      })
       .pipe(tap((risposta) => this.salvaToken(risposta.token)));
   }
 
@@ -39,11 +52,21 @@ export class AuthService {
 
   public logout(): void {
     localStorage.removeItem(CHIAVE_TOKEN);
+    localStorage.removeItem(CHIAVE_REFRESH_TOKEN);
     this.utenteCorrente.set(null);
   }
 
   public getToken(): string | null {
     return localStorage.getItem(CHIAVE_TOKEN);
+  }
+
+  public getRefreshToken(): string | null {
+    return localStorage.getItem(CHIAVE_REFRESH_TOKEN);
+  }
+
+  private salvaSessione(token: string, refreshToken: string): void {
+    localStorage.setItem(CHIAVE_REFRESH_TOKEN, refreshToken);
+    this.salvaToken(token);
   }
 
   private salvaToken(token: string): void {

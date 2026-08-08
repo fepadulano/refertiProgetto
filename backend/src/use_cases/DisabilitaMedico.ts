@@ -5,7 +5,7 @@ import { injectable, inject } from "tsyringe";
 import {
   IUtenteRepository,
   IAuditLogRepository,
-  IUuidGenerator,
+  IGeneratoreUuid,
   IGestoreTransazioni,
 } from "./ports";
 
@@ -20,7 +20,7 @@ export class DisabilitaMedicoUseCase {
   constructor(
     @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
-    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGeneratoreUuid") private uuidGenerator: IGeneratoreUuid,
     @inject("IGestoreTransazioni")
     private gestoreTransazioni: IGestoreTransazioni,
   ) {}

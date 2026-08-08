@@ -33,6 +33,23 @@ export async function login(
   return corpo.token;
 }
 
+// Come login(), ma restituisce anche il refresh token — serve solo al test
+// che verifica il rinnovo automatico della sessione (vedi auth.spec.ts).
+export async function loginConRefresh(
+  request: APIRequestContext,
+  email: string,
+  password: string,
+): Promise<{ token: string; refreshToken: string }> {
+  const risposta = await request.post(`${API_URL}/auth/login`, {
+    data: { email, password, captchaToken: "test-captcha-token" },
+  });
+  const corpo = await risposta.json();
+  if (!risposta.ok()) {
+    throw new Error(`Login fallito per ${email}: ${JSON.stringify(corpo)}`);
+  }
+  return { token: corpo.token, refreshToken: corpo.refreshToken };
+}
+
 export async function creaMedico(
   request: APIRequestContext,
   tokenAdmin: string,
@@ -84,10 +101,17 @@ export async function stubCaptcha(context: BrowserContext, risolto: boolean): Pr
 export async function impostaSessione(
   context: BrowserContext,
   token: string,
+  refreshToken?: string,
 ): Promise<void> {
-  await context.addInitScript((valore) => {
-    localStorage.setItem("referti_token", valore);
-  }, token);
+  await context.addInitScript(
+    ({ token, refreshToken }) => {
+      localStorage.setItem("referti_token", token);
+      if (refreshToken) {
+        localStorage.setItem("referti_refresh_token", refreshToken);
+      }
+    },
+    { token, refreshToken },
+  );
 }
 
 export async function registraPaziente(

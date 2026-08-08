@@ -11,6 +11,12 @@ export interface LoginRequest {
 export interface LoginResponse {
   messaggio: string;
   token: string;
+  refreshToken: string;
+}
+
+// Corpo della risposta di POST /api/auth/refresh (200 OK)
+export interface RefreshResponse {
+  token: string;
 }
 
 // Corpo della richiesta POST /api/auth/registrazione-paziente

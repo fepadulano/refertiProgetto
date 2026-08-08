@@ -1,4 +1,4 @@
-import { Referto } from "../entities/Referto";
+import { Referto, CategoriaReferto } from "../entities/Referto";
 import { RuoloUtente } from "../entities/Utente";
 import { ErroreAutorizzazione } from "./erroriDominio";
 import { injectable, inject } from "tsyringe";
@@ -7,7 +7,7 @@ import { IUtenteRepository, IRefertoRepository } from "./ports";
 export interface ConsultazioneStoricoInput {
   utenteId: string; // chi fa la richiesta (dal token JWT)
   pazienteId: string;
-  categoria?: string;
+  categoria?: CategoriaReferto;
   dataInizio?: Date;
   dataFine?: Date;
 }

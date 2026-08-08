@@ -57,7 +57,7 @@ test("un medico carica un referto e il paziente lo vede arrivare in tempo reale"
   await pageMedico.getByPlaceholder("Codice fiscale (16 caratteri)").fill(paziente.codiceFiscale);
   await expect(pageMedico.getByText("Paziente trovato")).toBeVisible();
 
-  await pageMedico.locator("#categoria").fill("Radiografia Test E2E");
+  await pageMedico.locator("#categoria").selectOption("Risonanza");
   await pageMedico.locator("#dataEsame").fill("2026-01-15");
   await pageMedico.locator("#file").setInputFiles(FILE_PDF);
   await pageMedico.getByRole("button", { name: "Carica referto" }).click();
@@ -68,7 +68,7 @@ test("un medico carica un referto e il paziente lo vede arrivare in tempo reale"
   await expect(pagePaziente.getByText(/Nuovo referto disponibile/)).toBeVisible({
     timeout: 10_000,
   });
-  await expect(pagePaziente.getByRole("cell", { name: "Radiografia Test E2E" })).toBeVisible();
+  await expect(pagePaziente.getByRole("cell", { name: "Risonanza" })).toBeVisible();
 
   // e riesce a scaricare il PDF appena arrivato
   const downloadPromise = pagePaziente.waitForEvent("download");

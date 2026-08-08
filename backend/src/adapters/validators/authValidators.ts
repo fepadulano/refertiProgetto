@@ -16,3 +16,7 @@ export const loginSchema = z.object({
   password: z.string().min(1, "La password è obbligatoria"),
   captchaToken: z.string().min(1, "Verifica captcha obbligatoria"),
 });
+
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, "Il refresh token è obbligatorio"),
+});

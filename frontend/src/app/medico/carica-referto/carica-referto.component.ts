@@ -20,6 +20,7 @@ import { PazientiService } from '../../core/services/pazienti.service';
 import { RefertiService } from '../../core/services/referti.service';
 import { PazienteTrovato } from '../../core/models/paziente.models';
 import { NotificaService } from '../../core/services/notifica.service';
+import { CategoriaReferto } from '../../core/models/categoria-referto';
 
 @Component({
   selector: 'app-carica-referto',
@@ -37,9 +38,12 @@ export class CaricaRefertoComponent {
 
   public readonly pazienteTrovato = signal<PazienteTrovato | null>(null);
   public readonly ricercaInCorso = signal(false);
-  public readonly uploadInCorso = signal(false);
+  public readonly caricamentoInCorso = signal(false);
 
   public fileSelezionato: File | null = null;
+
+  // esposto al template, per popolare la select delle categorie
+  public readonly categorie = Object.values(CategoriaReferto);
 
   public readonly formRicerca = this.formBuilder.nonNullable.group({
     codiceFiscale: [
@@ -48,7 +52,7 @@ export class CaricaRefertoComponent {
     ],
   });
 
-  public readonly formUpload = this.formBuilder.nonNullable.group({
+  public readonly formCaricamento = this.formBuilder.nonNullable.group({
     categoria: ['', Validators.required],
     dataEsame: ['', Validators.required],
   });
@@ -66,7 +70,7 @@ export class CaricaRefertoComponent {
           // switchMap annulla la ricerca precedente se l'utente digita ancora
           this.ricercaInCorso.set(true);
           this.pazienteTrovato.set(null);
-          this.resettaFormUpload();
+          this.resettaFormCaricamento();
 
           return this.pazientiService.cercaPerCodiceFiscale(codiceFiscale).pipe(
             catchError((errore) => {
@@ -101,24 +105,24 @@ export class CaricaRefertoComponent {
 
   public carica(): void {
     const paziente = this.pazienteTrovato();
-    if (!paziente || this.formUpload.invalid || !this.fileSelezionato) {
+    if (!paziente || this.formCaricamento.invalid || !this.fileSelezionato) {
       return;
     }
 
-    this.uploadInCorso.set(true);
+    this.caricamentoInCorso.set(true);
 
-    const { categoria, dataEsame } = this.formUpload.getRawValue();
+    const { categoria, dataEsame } = this.formCaricamento.getRawValue();
 
     this.refertiService
       .upload(paziente.pazienteId, categoria, dataEsame, this.fileSelezionato)
       .subscribe({
         next: () => {
-          this.uploadInCorso.set(false);
+          this.caricamentoInCorso.set(false);
           this.notificaService.successo('Referto caricato con successo.');
-          this.resettaFormUpload();
+          this.resettaFormCaricamento();
         },
         error: (errore) => {
-          this.uploadInCorso.set(false);
+          this.caricamentoInCorso.set(false);
           this.notificaService.errore(
             errore.error?.errore ?? 'Errore imprevisto, riprova.',
           );
@@ -126,8 +130,8 @@ export class CaricaRefertoComponent {
       });
   }
 
-  private resettaFormUpload(): void {
-    this.formUpload.reset({ categoria: '', dataEsame: '' });
+  private resettaFormCaricamento(): void {
+    this.formCaricamento.reset({ categoria: '', dataEsame: '' });
     this.fileSelezionato = null;
     if (this.inputFile) {
       this.inputFile.nativeElement.value = '';

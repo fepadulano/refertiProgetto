@@ -3,6 +3,7 @@ import {
   emailCasuale,
   codiceFiscaleCasuale,
   login,
+  loginConRefresh,
   impostaSessione,
   stubCaptcha,
   registraPaziente,
@@ -78,6 +79,31 @@ test("con una sessione valida, la home mostra i dati dell'utente", async ({ page
 
   await expect(page.getByRole("heading", { name: "Bentornato." })).toBeVisible();
   await expect(page.getByText("PAZIENTE")).toBeVisible();
+});
+
+test("con un access token scaduto ma un refresh token valido, la sessione si rinnova da sola", async ({
+  page,
+}) => {
+  const { email } = await registraPaziente(page.request, {
+    nome: "Giulia",
+    cognome: "Ferrari",
+    password: "PasswordSicura123!",
+  });
+  const { token, refreshToken } = await loginConRefresh(page.request, email, "PasswordSicura123!");
+
+  // stessa forma di un JWT vero (così AuthService lo decodifica comunque
+  // per popolare l'utente), ma con la firma manomessa: il backend lo
+  // rifiuterà con 401 alla prima richiesta protetta, esattamente come un
+  // token scaduto
+  const tokenManomesso = token.slice(0, -5) + "XXXXX";
+  await impostaSessione(page.context(), tokenManomesso, refreshToken);
+
+  await page.goto("/storico");
+
+  // se il refresh silenzioso funziona, la pagina protetta si carica comunque,
+  // senza rimbalzare l'utente al login
+  await expect(page).toHaveURL(/\/storico$/);
+  await expect(page.getByText("Nessun referto trovato.")).toBeVisible();
 });
 
 test("un paziente non può aprire la pagina di caricamento referti, riservata al medico", async ({

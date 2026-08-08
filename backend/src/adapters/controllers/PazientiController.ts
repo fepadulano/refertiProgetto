@@ -5,6 +5,7 @@ import { ConsultazioneStoricoUseCase } from "../../use_cases/ConsultazioneStoric
 import { StoricoRefertiPropriUseCase } from "../../use_cases/StoricoRefertiPropri";
 import { AuthRequest } from "../../frameworks/web/middlewares/auth.middleware";
 import { gestisciErroreHttp } from "./gestisciErroreHttp";
+import { CategoriaReferto } from "../../entities/Referto";
 
 @injectable()
 export class PazientiController {
@@ -52,7 +53,7 @@ export class PazientiController {
       const referti = await this.consultazioneStoricoUseCase.execute({
         utenteId,
         pazienteId,
-        categoria: categoria as string | undefined,
+        categoria: categoria as CategoriaReferto | undefined,
         dataInizio: dataInizio ? new Date(dataInizio as string) : undefined,
         dataFine: dataFine ? new Date(dataFine as string) : undefined,
       });
@@ -76,7 +77,7 @@ export class PazientiController {
 
       const referti = await this.storicoRefertiPropriUseCase.execute({
         utenteId,
-        categoria: categoria as string | undefined,
+        categoria: categoria as CategoriaReferto | undefined,
         dataInizio: dataInizio ? new Date(dataInizio as string) : undefined,
         dataFine: dataFine ? new Date(dataFine as string) : undefined,
       });

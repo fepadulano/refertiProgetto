@@ -22,7 +22,9 @@ export const env = {
   },
   jwt: {
     secret: richiesta("JWT_SECRET"),
-    scadenza: process.env.JWT_EXPIRES_IN ?? "2h",
+    scadenza: process.env.JWT_EXPIRES_IN ?? "15m",
+    refreshSecret: richiesta("REFRESH_JWT_SECRET"),
+    refreshScadenza: process.env.REFRESH_JWT_EXPIRES_IN ?? "7d",
   },
   uploadDir: process.env.UPLOAD_DIR ?? "uploads/referti",
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:4200",

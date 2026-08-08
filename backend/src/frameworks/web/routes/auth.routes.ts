@@ -2,10 +2,11 @@ import { Router } from "express";
 import { container } from "../../../container";
 import { AuthController } from "../../../adapters/controllers/AuthController";
 import { validaBody } from "../middlewares/validate.middleware";
-import { limitatoreLogin } from "../middlewares/rateLimit.middleware";
+import { limitatoreAuth } from "../middlewares/rateLimit.middleware";
 import {
   registrazionePazienteSchema,
   loginSchema,
+  refreshTokenSchema,
 } from "../../../adapters/validators/authValidators";
 
 export const authRouter = Router();
@@ -19,7 +20,13 @@ authRouter.post(
 );
 authRouter.post(
   "/login",
-  limitatoreLogin,
+  limitatoreAuth,
   validaBody(loginSchema),
   authController.login,
+);
+authRouter.post(
+  "/refresh",
+  limitatoreAuth,
+  validaBody(refreshTokenSchema),
+  authController.refresh,
 );

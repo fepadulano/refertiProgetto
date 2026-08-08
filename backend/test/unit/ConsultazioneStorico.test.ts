@@ -2,7 +2,7 @@ import { ConsultazioneStoricoUseCase } from "../../src/use_cases/ConsultazioneSt
 import { Utente, RuoloUtente } from "../../src/entities/Utente";
 import { Medico } from "../../src/entities/Medico";
 import { Paziente } from "../../src/entities/Paziente";
-import { Referto } from "../../src/entities/Referto";
+import { Referto, CategoriaReferto } from "../../src/entities/Referto";
 import { ErroreAutorizzazione } from "../../src/use_cases/erroriDominio";
 import { FakeUtenteRepository } from "../fakes/FakeUtenteRepository";
 import { FakeRefertoRepository } from "../fakes/FakeRefertoRepository";
@@ -67,7 +67,7 @@ describe("ConsultazioneStoricoUseCase (unit, con repository finti)", () => {
         "profilo-medico-1",
         "profilo-paziente-1",
         "uploads/referti/finto.pdf",
-        "Radiografia",
+        CategoriaReferto.RADIOLOGIA,
         new Date("2026-01-10"),
       ),
     );

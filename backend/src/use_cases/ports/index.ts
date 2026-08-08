@@ -4,6 +4,7 @@ export * from "./IMedicoRepository";
 export * from "./IRefertoRepository";
 export * from "./IAuditLogRepository";
 export * from "./IPasswordHasher";
-export * from "./IUuidGenerator";
+export * from "./IGeneratoreUuid";
 export * from "./ITokenManager";
 export * from "./IGestoreTransazioni";
+export * from "./IFileStorage";

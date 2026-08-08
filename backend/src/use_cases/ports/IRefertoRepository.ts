@@ -1,8 +1,8 @@
-import { Referto } from "../../entities/Referto";
+import { Referto, CategoriaReferto } from "../../entities/Referto";
 import { Transazione } from "./IGestoreTransazioni";
 
 export interface FiltriStoricoReferti {
-  categoria?: string;
+  categoria?: CategoriaReferto;
   dataInizio?: Date;
   dataFine?: Date;
 }

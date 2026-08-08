@@ -1,15 +1,19 @@
 <div class="container py-4">
   <h1 class="h3 mb-4">I miei referti</h1>
 
-  <form [formGroup]="filtri" (ngSubmit)="cerca()" class="row g-3 align-items-end mb-4">
+  <form
+    [formGroup]="filtri"
+    (ngSubmit)="cerca()"
+    class="row g-3 align-items-end mb-4"
+  >
     <div class="col-12 col-md-4">
       <label for="categoria" class="form-label">Categoria</label>
-      <input
-        id="categoria"
-        class="form-control"
-        formControlName="categoria"
-        placeholder="Es. Esame del sangue"
-      />
+      <select id="categoria" class="form-select" formControlName="categoria">
+        <option value="">Tutte</option>
+        @for (categoria of categorie; track categoria) {
+          <option [value]="categoria">{{ categoria }}</option>
+        }
+      </select>
     </div>
 
     <div class="col-6 col-md-3">

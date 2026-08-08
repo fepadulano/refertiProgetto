@@ -6,7 +6,7 @@ import {
   IUtenteRepository,
   IRefertoRepository,
   IAuditLogRepository,
-  IUuidGenerator,
+  IGeneratoreUuid,
 } from "./ports";
 
 export interface DownloadRefertoInput {
@@ -21,7 +21,7 @@ export class DownloadRefertoUseCase {
     @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
     @inject("IRefertoRepository") private refertoRepo: IRefertoRepository,
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
-    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGeneratoreUuid") private uuidGenerator: IGeneratoreUuid,
   ) {}
 
   // ritorna il percorso fisico del file, così il controller può inviarlo

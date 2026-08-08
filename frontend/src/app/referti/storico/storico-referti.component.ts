@@ -7,6 +7,7 @@ import { FiltriStorico, Referto } from "../../core/models/referto.models";
 import { PaginatorComponent } from "../../shared/paginator/paginator.component";
 import { NotificaService } from "../../core/services/notifica.service";
 import { NotificheTempoRealeService } from "../../core/services/notifiche-tempo-reale.service";
+import { CategoriaReferto } from "../../core/models/categoria-referto";
 
 @Component({
   selector: "app-storico-referti",
@@ -21,6 +22,9 @@ export class StoricoRefertiComponent {
   private readonly notificheTempoReale = inject(NotificheTempoRealeService);
 
   private readonly elementiPerPagina = 5;
+
+  // esposto al template, per popolare la select del filtro
+  public readonly categorie = Object.values(CategoriaReferto);
 
   public readonly referti = signal<Referto[]>([]);
   public readonly paginaCorrente = signal(1);
@@ -92,7 +96,7 @@ export class StoricoRefertiComponent {
     const valori = this.filtri.getRawValue();
     const filtri: FiltriStorico = {};
 
-    if (valori.categoria) filtri.categoria = valori.categoria;
+    if (valori.categoria) filtri.categoria = valori.categoria as CategoriaReferto;
     if (valori.dataInizio) filtri.dataInizio = valori.dataInizio;
     if (valori.dataFine) filtri.dataFine = valori.dataFine;
 

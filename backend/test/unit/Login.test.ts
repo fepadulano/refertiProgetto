@@ -5,7 +5,7 @@ import { FakeUtenteRepository } from "../fakes/FakeUtenteRepository";
 import { FakePasswordHasher } from "../fakes/FakePasswordHasher";
 import { FakeTokenManager } from "../fakes/FakeTokenManager";
 import { FakeAuditLogRepository } from "../fakes/FakeAuditLogRepository";
-import { FakeUuidGenerator } from "../fakes/FakeUuidGenerator";
+import { FakeGeneratoreUuid } from "../fakes/FakeGeneratoreUuid";
 
 describe("LoginUseCase (unit, con repository finti)", () => {
   let utenteRepo: FakeUtenteRepository;
@@ -22,7 +22,7 @@ describe("LoginUseCase (unit, con repository finti)", () => {
       passwordHasher,
       new FakeTokenManager(),
       auditLogRepo,
-      new FakeUuidGenerator(),
+      new FakeGeneratoreUuid(),
     );
 
     await utenteRepo.salva(
@@ -37,14 +37,15 @@ describe("LoginUseCase (unit, con repository finti)", () => {
     );
   });
 
-  it("restituisce un token e registra LOGIN_EFFETTUATO con credenziali corrette", async () => {
-    const token = await useCase.execute({
+  it("restituisce un token e un refresh token, e registra LOGIN_EFFETTUATO con credenziali corrette", async () => {
+    const risultato = await useCase.execute({
       email: "mario@test.it",
       passwordInChiaro: "PasswordCorretta1!",
       ipAddress: "127.0.0.1",
     });
 
-    expect(token).toBe("token-per-utente-1");
+    expect(risultato.token).toBe("token-per-utente-1");
+    expect(risultato.refreshToken).toBe("refresh-per-utente-1");
     expect(auditLogRepo.logs).toHaveLength(1);
     expect(auditLogRepo.logs[0].tipoAzione).toBe(TipoAzione.LOGIN_EFFETTUATO);
   });

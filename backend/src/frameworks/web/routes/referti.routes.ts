@@ -2,7 +2,7 @@ import { Router } from "express";
 import { RefertiController } from "../../../adapters/controllers/RefertiController";
 import { container } from "tsyringe";
 import { abilitaProtezioneJwt } from "../middlewares/auth.middleware";
-import { uploadPdf } from "../middlewares/upload.middleware";
+import { caricaPdf } from "../middlewares/upload.middleware";
 import { validaBody } from "../middlewares/validate.middleware";
 import { uploadRefertoSchema } from "../../../adapters/validators/refertiValidators";
 
@@ -13,7 +13,7 @@ const refertiController = container.resolve(RefertiController);
 refertiRouter.post(
   "/",
   abilitaProtezioneJwt,
-  uploadPdf.single("file"),
+  caricaPdf.single("file"),
   validaBody(uploadRefertoSchema),
   refertiController.upload,
 );

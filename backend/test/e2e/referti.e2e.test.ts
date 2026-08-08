@@ -139,6 +139,20 @@ describe("E2E - /api/referti", () => {
     expect(risposta.status).toBe(400);
   });
 
+  it("rifiuta l'upload se il contenuto non è davvero un PDF, anche con mimetype dichiarato correttamente", async () => {
+    const risposta = await request(app)
+      .post("/api/referti")
+      .set("Authorization", `Bearer ${tokenMedico}`)
+      .field("pazienteId", pazienteId)
+      .field("categoria", "Radiologia")
+      .attach("file", Buffer.from("non è davvero un PDF, solo l'etichetta lo dice"), {
+        filename: "finto.pdf",
+        contentType: "application/pdf",
+      });
+
+    expect(risposta.status).toBe(400);
+  });
+
   it("rifiuta l'upload senza token di autenticazione", async () => {
     const risposta = await request(app)
       .post("/api/referti")

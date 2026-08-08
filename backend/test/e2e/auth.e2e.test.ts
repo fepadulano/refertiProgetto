@@ -76,7 +76,7 @@ describe("E2E - /api/auth", () => {
     expect(risposta.status).toBe(400);
   });
 
-  it("effettua il login con credenziali corrette e restituisce un token", async () => {
+  it("effettua il login con credenziali corrette e restituisce un token e un refresh token", async () => {
     const email = emailCasuale("paziente");
     await request(app).post("/api/auth/registrazione-paziente").send({
       nome: "Mario",
@@ -93,6 +93,7 @@ describe("E2E - /api/auth", () => {
 
     expect(risposta.status).toBe(200);
     expect(typeof risposta.body.token).toBe("string");
+    expect(typeof risposta.body.refreshToken).toBe("string");
   });
 
   it("rifiuta il login senza il token captcha", async () => {
@@ -129,5 +130,47 @@ describe("E2E - /api/auth", () => {
       .send({ email, password: "PasswordSbagliata1!", captchaToken: "test-captcha-token" });
 
     expect(risposta.status).toBe(401);
+  });
+
+  it("con un refresh token valido ottiene un nuovo access token, utilizzabile su una rotta protetta", async () => {
+    const email = emailCasuale("paziente");
+    await request(app).post("/api/auth/registrazione-paziente").send({
+      nome: "Mario",
+      cognome: "Rossi",
+      email,
+      password,
+      codiceFiscale: codiceFiscaleCasuale(),
+      dataNascita: "1990-05-15",
+    });
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ email, password, captchaToken: "test-captcha-token" });
+
+    const refresh = await request(app)
+      .post("/api/auth/refresh")
+      .send({ refreshToken: login.body.refreshToken });
+
+    expect(refresh.status).toBe(200);
+    expect(typeof refresh.body.token).toBe("string");
+
+    const storico = await request(app)
+      .get("/api/pazienti/me/referti")
+      .set("Authorization", `Bearer ${refresh.body.token}`);
+
+    expect(storico.status).toBe(200);
+  });
+
+  it("rifiuta un refresh token non valido", async () => {
+    const risposta = await request(app)
+      .post("/api/auth/refresh")
+      .send({ refreshToken: "questo-non-e-un-jwt-valido" });
+
+    expect(risposta.status).toBe(401);
+  });
+
+  it("rifiuta il refresh senza il campo refreshToken (validazione zod)", async () => {
+    const risposta = await request(app).post("/api/auth/refresh").send({});
+
+    expect(risposta.status).toBe(400);
   });
 });

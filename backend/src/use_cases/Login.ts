@@ -5,13 +5,18 @@ import {
   IPasswordHasher,
   ITokenManager,
   IAuditLogRepository,
-  IUuidGenerator,
+  IGeneratoreUuid,
 } from "./ports";
 
 export interface LoginInput {
   email: string;
   passwordInChiaro: string;
   ipAddress: string;
+}
+
+export interface LoginOutput {
+  token: string;
+  refreshToken: string;
 }
 
 @injectable()
@@ -21,10 +26,10 @@ export class LoginUseCase {
     @inject("IPasswordHasher") private passwordHasher: IPasswordHasher,
     @inject("ITokenManager") private tokenManager: ITokenManager,
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
-    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGeneratoreUuid") private uuidGenerator: IGeneratoreUuid,
   ) {}
 
-  public async execute(input: LoginInput): Promise<string> {
+  public async execute(input: LoginInput): Promise<LoginOutput> {
     const utente = await this.utenteRepo.findByEmail(input.email);
     if (!utente) {
       // email sconosciuta: niente utenteId da loggare
@@ -54,7 +59,10 @@ export class LoginUseCase {
     );
     await this.auditLogRepo.salva(auditLog);
 
-    return this.tokenManager.generaToken(utente);
+    return {
+      token: this.tokenManager.generaToken(utente),
+      refreshToken: this.tokenManager.generaRefreshToken(utente),
+    };
   }
 
   private async registraTentativoFallito(

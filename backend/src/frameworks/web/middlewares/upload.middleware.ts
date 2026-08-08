@@ -1,9 +1,5 @@
-import * as fs from "fs";
 import multer, { FileFilterCallback } from "multer";
 import { Request } from "express";
-import { env } from "../../config/env";
-
-fs.mkdirSync(env.uploadDir, { recursive: true });
 
 function filtroSoloPdf(
   _req: Request,
@@ -18,7 +14,7 @@ function filtroSoloPdf(
 }
 
 // memoryStorage: il file resta in RAM, sarà il controller a scriverlo cifrato
-export const uploadPdf = multer({
+export const caricaPdf = multer({
   storage: multer.memoryStorage(),
   fileFilter: filtroSoloPdf,
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB

@@ -1,11 +1,12 @@
 import { UploadRefertoUseCase } from "../../src/use_cases/UploadReferto";
+import { CategoriaReferto } from "../../src/entities/Referto";
 import { Utente, RuoloUtente } from "../../src/entities/Utente";
 import { Medico } from "../../src/entities/Medico";
 import { ErroreAutorizzazione } from "../../src/use_cases/erroriDominio";
 import { FakeUtenteRepository } from "../fakes/FakeUtenteRepository";
 import { FakeRefertoRepository } from "../fakes/FakeRefertoRepository";
 import { FakeAuditLogRepository } from "../fakes/FakeAuditLogRepository";
-import { FakeUuidGenerator } from "../fakes/FakeUuidGenerator";
+import { FakeGeneratoreUuid } from "../fakes/FakeGeneratoreUuid";
 import { FakeGestoreTransazioni } from "../fakes/FakeGestoreTransazioni";
 
 describe("UploadRefertoUseCase (unit, con repository finti)", () => {
@@ -20,7 +21,7 @@ describe("UploadRefertoUseCase (unit, con repository finti)", () => {
       utenteRepo,
       refertoRepo,
       new FakeAuditLogRepository(),
-      new FakeUuidGenerator(),
+      new FakeGeneratoreUuid(),
       new FakeGestoreTransazioni(),
     );
 
@@ -57,7 +58,7 @@ describe("UploadRefertoUseCase (unit, con repository finti)", () => {
       utenteId: "medico-1",
       pazienteId: "paziente-1",
       percorsoFile: "uploads/referti/finto.pdf",
-      categoria: "Radiologia",
+      categoria: CategoriaReferto.RADIOLOGIA,
       dataEsame: new Date("2026-01-10"),
       ipAddress: "127.0.0.1",
     });
@@ -72,7 +73,7 @@ describe("UploadRefertoUseCase (unit, con repository finti)", () => {
         utenteId: "paziente-1",
         pazienteId: "paziente-1",
         percorsoFile: "x.pdf",
-        categoria: "Radiologia",
+        categoria: CategoriaReferto.RADIOLOGIA,
         dataEsame: new Date("2026-01-10"),
         ipAddress: "127.0.0.1",
       }),

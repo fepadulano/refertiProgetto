@@ -58,18 +58,18 @@
 
         <h2 class="h6 card-title">Carica un nuovo referto</h2>
 
-        <form [formGroup]="formUpload" (ngSubmit)="carica()" class="row g-3">
+        <form [formGroup]="formCaricamento" (ngSubmit)="carica()" class="row g-3">
           <div class="col-12 col-md-6">
             <label for="categoria" class="form-label">Categoria</label>
-            <input
-              id="categoria"
-              class="form-control"
-              formControlName="categoria"
-              placeholder="Es. Esame del sangue"
-            />
+            <select id="categoria" class="form-select" formControlName="categoria">
+              <option value="" disabled>Seleziona una categoria</option>
+              @for (categoria of categorie; track categoria) {
+                <option [value]="categoria">{{ categoria }}</option>
+              }
+            </select>
             @if (
-              formUpload.controls.categoria.touched &&
-              formUpload.controls.categoria.invalid
+              formCaricamento.controls.categoria.touched &&
+              formCaricamento.controls.categoria.invalid
             ) {
               <div class="form-text text-danger">La categoria è obbligatoria.</div>
             }
@@ -84,8 +84,8 @@
               formControlName="dataEsame"
             />
             @if (
-              formUpload.controls.dataEsame.touched &&
-              formUpload.controls.dataEsame.invalid
+              formCaricamento.controls.dataEsame.touched &&
+              formCaricamento.controls.dataEsame.invalid
             ) {
               <div class="form-text text-danger">
                 La data dell'esame è obbligatoria.
@@ -109,9 +109,9 @@
             <button
               type="submit"
               class="btn btn-primary"
-              [disabled]="uploadInCorso() || !fileSelezionato"
+              [disabled]="caricamentoInCorso() || !fileSelezionato"
             >
-              @if (uploadInCorso()) {
+              @if (caricamentoInCorso()) {
                 <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
               } @else {
                 Carica referto

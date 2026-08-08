@@ -5,7 +5,7 @@ import {
 } from "../../src/frameworks/database/database";
 import { UtenteModel } from "../../src/frameworks/database/models/UtenteModel";
 import { BcryptPasswordHasher } from "../../src/frameworks/security/BcryptPasswordHasher";
-import { CryptoUuidGenerator } from "../../src/frameworks/utils/CryptoUuidGenerator";
+import { CryptoGeneratoreUuid } from "../../src/frameworks/utils/CryptoGeneratoreUuid";
 import { RuoloUtente } from "../../src/entities/Utente";
 
 // I test e2e girano sopra il database Postgres vero (lo stesso configurato
@@ -37,7 +37,7 @@ export function codiceFiscaleCasuale(): string {
 }
 
 const passwordHasher = new BcryptPasswordHasher();
-const uuidGenerator = new CryptoUuidGenerator();
+const uuidGenerator = new CryptoGeneratoreUuid();
 
 // Non esiste (giustamente) un endpoint pubblico per creare il primo admin:
 // nella realtà quell'account viene seminato manualmente. Nei test facciamo

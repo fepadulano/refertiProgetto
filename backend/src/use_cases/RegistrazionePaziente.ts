@@ -7,7 +7,7 @@ import {
   IPazienteRepository,
   IAuditLogRepository,
   IPasswordHasher,
-  IUuidGenerator,
+  IGeneratoreUuid,
   IGestoreTransazioni,
 } from "./ports";
 
@@ -28,7 +28,7 @@ export class RegistrazionePazienteUseCase {
     @inject("IPazienteRepository") private pazienteRepo: IPazienteRepository,
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
     @inject("IPasswordHasher") private passwordHasher: IPasswordHasher,
-    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGeneratoreUuid") private uuidGenerator: IGeneratoreUuid,
     @inject("IGestoreTransazioni")
     private gestoreTransazioni: IGestoreTransazioni,
   ) {}

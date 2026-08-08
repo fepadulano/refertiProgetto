@@ -1,4 +1,4 @@
-import { Referto } from "../entities/Referto";
+import { Referto, CategoriaReferto } from "../entities/Referto";
 import { AuditLog, TipoAzione } from "../entities/AuditLog";
 import { RuoloUtente } from "../entities/Utente";
 import { ErroreAutorizzazione } from "./erroriDominio";
@@ -7,7 +7,7 @@ import {
   IUtenteRepository,
   IRefertoRepository,
   IAuditLogRepository,
-  IUuidGenerator,
+  IGeneratoreUuid,
   IGestoreTransazioni,
 } from "./ports";
 
@@ -15,7 +15,7 @@ export interface UploadRefertoInput {
   utenteId: string; // dal token JWT
   pazienteId: string;
   percorsoFile: string;
-  categoria: string;
+  categoria: CategoriaReferto;
   dataEsame: Date; // quando è stato fatto l'esame, non quando viene caricato
   ipAddress: string;
 }
@@ -26,7 +26,7 @@ export class UploadRefertoUseCase {
     @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
     @inject("IRefertoRepository") private refertoRepo: IRefertoRepository,
     @inject("IAuditLogRepository") private auditLogRepo: IAuditLogRepository,
-    @inject("IUuidGenerator") private uuidGenerator: IUuidGenerator,
+    @inject("IGeneratoreUuid") private uuidGenerator: IGeneratoreUuid,
     @inject("IGestoreTransazioni")
     private gestoreTransazioni: IGestoreTransazioni,
   ) {}
@@ -50,7 +50,7 @@ export class UploadRefertoUseCase {
       utente.profiloMedico.id,
       input.pazienteId,
       input.percorsoFile,
-      input.categoria.trim(),
+      input.categoria,
       input.dataEsame,
     );
 

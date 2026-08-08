@@ -1,5 +1,5 @@
 import { Op, Transaction, WhereOptions } from "sequelize";
-import { Referto } from "../../entities/Referto";
+import { Referto, CategoriaReferto } from "../../entities/Referto";
 import { RefertoModel } from "../../frameworks/database/models/RefertoModel";
 import {
   IRefertoRepository,
@@ -41,8 +41,9 @@ export class RefertoRepository implements IRefertoRepository {
     const where: WhereOptions = { pazienteId };
 
     if (filtri?.categoria) {
-      // case-insensitive: "radiografia" e "Radiografia" sono la stessa categoria
-      where.categoria = { [Op.iLike]: filtri.categoria.trim() };
+      // categoria è una lista fissa (CategoriaReferto): confronto esatto, senza
+      // bisogno di normalizzazioni — non può più esserci ambiguità di maiuscole
+      where.categoria = filtri.categoria;
     }
 
     if (filtri?.dataInizio && filtri?.dataFine) {
@@ -69,7 +70,7 @@ export class RefertoRepository implements IRefertoRepository {
       refertoDb.medicoId as string,
       refertoDb.pazienteId as string,
       refertoDb.percorsoFile as string,
-      refertoDb.categoria as string,
+      refertoDb.categoria as CategoriaReferto,
       refertoDb.dataEsame as Date,
       refertoDb.dataCaricamento as Date,
     );

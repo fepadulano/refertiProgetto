@@ -2,13 +2,13 @@ import { DownloadRefertoUseCase } from "../../src/use_cases/DownloadReferto";
 import { Utente, RuoloUtente } from "../../src/entities/Utente";
 import { Medico } from "../../src/entities/Medico";
 import { Paziente } from "../../src/entities/Paziente";
-import { Referto } from "../../src/entities/Referto";
+import { Referto, CategoriaReferto } from "../../src/entities/Referto";
 import { TipoAzione } from "../../src/entities/AuditLog";
 import { ErroreAutorizzazione } from "../../src/use_cases/erroriDominio";
 import { FakeUtenteRepository } from "../fakes/FakeUtenteRepository";
 import { FakeRefertoRepository } from "../fakes/FakeRefertoRepository";
 import { FakeAuditLogRepository } from "../fakes/FakeAuditLogRepository";
-import { FakeUuidGenerator } from "../fakes/FakeUuidGenerator";
+import { FakeGeneratoreUuid } from "../fakes/FakeGeneratoreUuid";
 
 describe("DownloadRefertoUseCase (unit, con repository finti)", () => {
   let utenteRepo: FakeUtenteRepository;
@@ -84,7 +84,7 @@ describe("DownloadRefertoUseCase (unit, con repository finti)", () => {
       utenteRepo,
       refertoRepo,
       auditLogRepo,
-      new FakeUuidGenerator(),
+      new FakeGeneratoreUuid(),
     );
 
     await utenteRepo.salva(medicoProprietario);
@@ -98,7 +98,7 @@ describe("DownloadRefertoUseCase (unit, con repository finti)", () => {
         "profilo-medico-1",
         "profilo-paziente-1",
         "uploads/referti/finto.pdf",
-        "Radiografia",
+        CategoriaReferto.RADIOLOGIA,
         new Date("2026-01-10"),
       ),
     );
