@@ -30,7 +30,8 @@ describe("RefreshTokenUseCase (unit, con repository finti)", () => {
         "luca@test.it",
         "hash",
         RuoloUtente.MEDICO,
-        false,
+        false, // deveCambiarePassword
+        false, // attivo: l'account è disabilitato
       ),
     );
   });

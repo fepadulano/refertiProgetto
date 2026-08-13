@@ -3,21 +3,17 @@ import { container } from "../../../container";
 import { AuthController } from "../../../adapters/controllers/AuthController";
 import { validaBody } from "../middlewares/validate.middleware";
 import { limitatoreAuth } from "../middlewares/rateLimit.middleware";
+import { abilitaProtezioneJwt } from "../middlewares/auth.middleware";
 import {
-  registrazionePazienteSchema,
   loginSchema,
   refreshTokenSchema,
+  cambiaPasswordSchema,
 } from "../../../adapters/validators/authValidators";
 
 export const authRouter = Router();
 
 const authController = container.resolve(AuthController);
 
-authRouter.post(
-  "/registrazione-paziente",
-  validaBody(registrazionePazienteSchema),
-  authController.registraPaziente,
-);
 authRouter.post(
   "/login",
   limitatoreAuth,
@@ -29,4 +25,10 @@ authRouter.post(
   limitatoreAuth,
   validaBody(refreshTokenSchema),
   authController.refresh,
+);
+authRouter.post(
+  "/cambia-password",
+  abilitaProtezioneJwt,
+  validaBody(cambiaPasswordSchema),
+  authController.cambiaPassword,
 );

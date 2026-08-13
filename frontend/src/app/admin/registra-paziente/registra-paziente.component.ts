@@ -1,25 +1,26 @@
 import { Component, inject, signal } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
-import { Router, RouterLink } from "@angular/router";
-import { AuthService } from "../../core/services/auth.service";
+import { AdminService } from "../../core/services/admin.service";
 import { NotificaService } from "../../core/services/notifica.service";
 
+// RF9: l'account Paziente non si autoregistra più. È l'Admin (segreteria/
+// accettazione) a crearlo, dopo aver verificato di persona un documento
+// d'identità e il codice fiscale — altrimenti chiunque potrebbe dichiarare
+// il CF di un'altra persona reale, dato che in Italia non è un segreto.
 @Component({
-  selector: "app-registrazione",
-  imports: [ReactiveFormsModule, RouterLink],
-  templateUrl: "./registrazione.component.html",
-  styleUrl: "./registrazione.component.css",
+  selector: "app-registra-paziente",
+  imports: [ReactiveFormsModule],
+  templateUrl: "./registra-paziente.component.html",
+  styleUrl: "./registra-paziente.component.css",
 })
-export class RegistrazioneComponent {
+export class RegistraPazienteComponent {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
+  private readonly adminService = inject(AdminService);
   private readonly notificaService = inject(NotificaService);
 
   public readonly inCorso = signal(false);
-  public readonly registrazioneCompletata = signal(false);
 
-  // stessi vincoli usati dal backend (authValidators.ts)
+  // stessi vincoli usati dal backend (pazientiValidators.ts)
   public readonly form = this.formBuilder.nonNullable.group({
     nome: ["", Validators.required],
     cognome: ["", Validators.required],
@@ -47,11 +48,11 @@ export class RegistrazioneComponent {
 
     this.inCorso.set(true);
 
-    this.authService.registrazione(this.form.getRawValue()).subscribe({
+    this.adminService.creaPaziente(this.form.getRawValue()).subscribe({
       next: () => {
         this.inCorso.set(false);
-        this.registrazioneCompletata.set(true);
-        setTimeout(() => this.router.navigateByUrl("/login"), 1500);
+        this.notificaService.successo("Account Paziente creato con successo.");
+        this.form.reset();
       },
       error: (errore) => {
         this.inCorso.set(false);

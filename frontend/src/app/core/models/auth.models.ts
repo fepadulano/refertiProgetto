@@ -19,20 +19,16 @@ export interface RefreshResponse {
   token: string;
 }
 
-// Corpo della richiesta POST /api/auth/registrazione-paziente
-export interface RegistrazioneRequest {
-  nome: string;
-  cognome: string;
-  email: string;
-  password: string;
-  codiceFiscale: string;
-  dataNascita: string; // formato "YYYY-MM-DD"
+// Corpo della richiesta POST /api/auth/cambia-password
+export interface CambiaPasswordRequest {
+  passwordAttuale: string;
+  nuovaPassword: string;
 }
 
-// Corpo della risposta di POST /api/auth/registrazione-paziente (201 Created)
-export interface RegistrazioneResponse {
+// Corpo della risposta di POST /api/auth/cambia-password (200 OK)
+export interface CambiaPasswordResponse {
   messaggio: string;
-  utenteId: string;
+  token: string;
 }
 
 // Le informazioni contenute nel payload del token JWT
@@ -40,6 +36,7 @@ export interface RegistrazioneResponse {
 export interface UtenteAutenticato {
   id: string;
   ruolo: RuoloUtente;
+  deveCambiarePassword: boolean;
 }
 
 // Forma standard con cui il backend risponde in caso di errore

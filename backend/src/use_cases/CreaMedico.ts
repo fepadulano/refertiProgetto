@@ -43,7 +43,12 @@ export class CreaMedicoUseCase {
       );
     }
 
-    const emailGiaUsata = await this.utenteRepo.esisteEmail(input.email);
+    // normalizzata in minuscolo, altrimenti "Mario@Test.it" e "mario@test.it"
+    // verrebbero trattate come due email diverse (il confronto in Postgres è
+    // case-sensitive) e passerebbero entrambe il controllo di unicità
+    const email = input.email.trim().toLowerCase();
+
+    const emailGiaUsata = await this.utenteRepo.esisteEmail(email);
     if (emailGiaUsata) {
       throw new Error("Esiste già un account con questa email.");
     }
@@ -53,13 +58,16 @@ export class CreaMedicoUseCase {
     );
 
     const nuovoUtenteId = this.uuidGenerator.genera();
+    // deveCambiarePassword=true: la password è provvisoria, scelta
+    // dall'Admin, e il medico dovrà sostituirla (Sezione 4.1.10)
     const nuovoUtente = new Utente(
       nuovoUtenteId,
       input.nome,
       input.cognome,
-      input.email,
+      email,
       passwordHashata,
       RuoloUtente.MEDICO,
+      true,
     );
 
     const nuovoMedicoId = this.uuidGenerator.genera();

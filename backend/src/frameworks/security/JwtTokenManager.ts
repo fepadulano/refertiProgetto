@@ -14,6 +14,7 @@ export class JwtTokenManager implements ITokenManager {
     const payload = {
       id: utente.id,
       ruolo: utente.ruolo,
+      deveCambiarePassword: utente.deveCambiarePassword,
     };
 
     // il cast serve perché JWT_EXPIRES_IN arriva da .env come stringa generica

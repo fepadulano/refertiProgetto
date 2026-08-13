@@ -1,6 +1,7 @@
 import { Routes } from "@angular/router";
 import { authGuard } from "./core/guards/auth.guard";
 import { ruoloGuard } from "./core/guards/ruolo.guard";
+import { passwordGuard } from "./core/guards/password.guard";
 import { RuoloUtente } from "./core/models/ruolo-utente";
 
 // lazy loading: loadComponent importa il file solo quando l'utente ci naviga
@@ -11,17 +12,20 @@ export const routes: Routes = [
       import("./auth/login/login.component").then((m) => m.LoginComponent),
   },
   {
-    path: "registrazione",
+    // fuori dal layout e senza passwordGuard, altrimenti si creerebbe un
+    // redirect infinito verso se stessa
+    path: "cambia-password",
     loadComponent: () =>
-      import("./auth/registrazione/registrazione.component").then(
-        (m) => m.RegistrazioneComponent,
+      import("./auth/cambia-password/cambia-password.component").then(
+        (m) => m.CambiaPasswordComponent,
       ),
+    canActivate: [authGuard],
   },
   {
     path: "",
     loadComponent: () =>
       import("./shared/layout/layout.component").then((m) => m.LayoutComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, passwordGuard],
     children: [
       {
         path: "",
@@ -45,6 +49,15 @@ export const routes: Routes = [
           ),
         canActivate: [ruoloGuard],
         data: { ruoloRichiesto: RuoloUtente.MEDICO },
+      },
+      {
+        path: "registra-paziente",
+        loadComponent: () =>
+          import(
+            "./admin/registra-paziente/registra-paziente.component"
+          ).then((m) => m.RegistraPazienteComponent),
+        canActivate: [ruoloGuard],
+        data: { ruoloRichiesto: RuoloUtente.ADMIN },
       },
       {
         path: "gestione-medici",

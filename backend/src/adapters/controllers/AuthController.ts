@@ -1,47 +1,22 @@
 import { Request, Response } from "express";
-import { RegistrazionePazienteUseCase } from "../../use_cases/RegistrazionePaziente";
 import { injectable, inject } from "tsyringe";
 import { LoginUseCase } from "../../use_cases/Login";
 import { RefreshTokenUseCase } from "../../use_cases/RefreshToken";
+import { CambiaPasswordUseCase } from "../../use_cases/CambiaPassword";
+import { ITokenManager } from "../../use_cases/ports";
+import { AuthRequest } from "../../frameworks/web/middlewares/auth.middleware";
 import { gestisciErroreHttp } from "./gestisciErroreHttp";
 import { verificaCaptcha } from "../../frameworks/security/VerificatoreCaptcha";
 
 @injectable()
 export class AuthController {
   constructor(
-    @inject(RegistrazionePazienteUseCase)
-    private registrazioneUseCase: RegistrazionePazienteUseCase,
     @inject(LoginUseCase) private loginUseCase: LoginUseCase,
     @inject(RefreshTokenUseCase) private refreshTokenUseCase: RefreshTokenUseCase,
+    @inject(CambiaPasswordUseCase)
+    private cambiaPasswordUseCase: CambiaPasswordUseCase,
+    @inject("ITokenManager") private tokenManager: ITokenManager,
   ) {}
-
-  public registraPaziente = async (
-    req: Request,
-    res: Response,
-  ): Promise<void> => {
-    try {
-      const { nome, cognome, email, password, codiceFiscale, dataNascita } =
-        req.body;
-      const ipAddress = req.ip || "0.0.0.0";
-
-      const nuovoUtente = await this.registrazioneUseCase.execute({
-        nome,
-        cognome,
-        email,
-        passwordInChiaro: password,
-        codiceFiscale,
-        dataNascita: new Date(dataNascita),
-        ipAddress,
-      });
-
-      res.status(201).json({
-        messaggio: "Paziente registrato con successo",
-        utenteId: nuovoUtente.id,
-      });
-    } catch (error) {
-      gestisciErroreHttp(error, res);
-    }
-  };
 
   public login = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -88,6 +63,36 @@ export class AuthController {
       } else {
         res.status(500).json({ errore: "Errore interno del server" });
       }
+    }
+  };
+
+  // Sostituisce la password provvisoria data da un Admin (RF2, RF9) con una
+  // scelta dal titolare dell'account. Restituisce un token nuovo, così il
+  // frontend smette subito di considerare l'utente "da reindirizzare".
+  public cambiaPassword = async (
+    req: AuthRequest,
+    res: Response,
+  ): Promise<void> => {
+    try {
+      const utenteId = req.user?.id;
+      if (!utenteId) throw new Error("Utente non autenticato");
+
+      const { passwordAttuale, nuovaPassword } = req.body;
+      const ipAddress = req.ip || "0.0.0.0";
+
+      const utenteAggiornato = await this.cambiaPasswordUseCase.execute({
+        utenteId,
+        passwordAttuale,
+        nuovaPassword,
+        ipAddress,
+      });
+
+      res.status(200).json({
+        messaggio: "Password aggiornata con successo",
+        token: this.tokenManager.generaToken(utenteAggiornato),
+      });
+    } catch (error) {
+      gestisciErroreHttp(error, res);
     }
   };
 }

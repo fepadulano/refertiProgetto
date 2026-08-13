@@ -1,6 +1,7 @@
 import { Utente, RuoloUtente } from "../entities/Utente";
 import { Paziente } from "../entities/Paziente";
 import { AuditLog, TipoAzione } from "../entities/AuditLog";
+import { ErroreAutorizzazione } from "./erroriDominio";
 import { injectable, inject } from "tsyringe";
 import {
   IUtenteRepository,
@@ -11,7 +12,8 @@ import {
   IGestoreTransazioni,
 } from "./ports";
 
-export interface RegistrazionePazienteInput {
+export interface CreaPazienteInput {
+  adminId: string; // chi compie l'azione (per il log e per l'autorizzazione)
   nome: string;
   cognome: string;
   email: string;
@@ -21,8 +23,16 @@ export interface RegistrazionePazienteInput {
   ipAddress: string;
 }
 
+// RF9: l'account Paziente non viene autoregistrato, ma creato dalla segreteria
+// (l'Amministratore, nel modello a tre ruoli di questo sistema) dopo aver
+// verificato di persona l'identità e il codice fiscale del paziente — in
+// Italia il CF non è un segreto: farlo dichiarare liberamente dall'utente
+// permetterebbe di impersonare un paziente reale ancora prima che si registri.
+// La stessa separazione tra front-office amministrativo e personale clinico
+// vale anche nella realtà: la registrazione anagrafica è compito della
+// segreteria/accettazione, non del medico, il cui tempo resta clinico.
 @injectable()
-export class RegistrazionePazienteUseCase {
+export class CreaPazienteUseCase {
   constructor(
     @inject("IUtenteRepository") private utenteRepo: IUtenteRepository,
     @inject("IPazienteRepository") private pazienteRepo: IPazienteRepository,
@@ -33,8 +43,20 @@ export class RegistrazionePazienteUseCase {
     private gestoreTransazioni: IGestoreTransazioni,
   ) {}
 
-  public async execute(input: RegistrazionePazienteInput): Promise<Utente> {
-    const emailGiaUsata = await this.utenteRepo.esisteEmail(input.email);
+  public async execute(input: CreaPazienteInput): Promise<Utente> {
+    const responsabile = await this.utenteRepo.findById(input.adminId);
+    if (!responsabile || responsabile.ruolo !== RuoloUtente.ADMIN) {
+      throw new ErroreAutorizzazione(
+        "Accesso negato: operazione consentita solo agli amministratori.",
+      );
+    }
+
+    // normalizzata in minuscolo, altrimenti "Mario@Test.it" e "mario@test.it"
+    // verrebbero trattate come due email diverse (il confronto in Postgres è
+    // case-sensitive) e passerebbero entrambe il controllo di unicità
+    const email = input.email.trim().toLowerCase();
+
+    const emailGiaUsata = await this.utenteRepo.esisteEmail(email);
     if (emailGiaUsata) {
       throw new Error("Esiste già un account con questa email.");
     }
@@ -44,13 +66,16 @@ export class RegistrazionePazienteUseCase {
     );
 
     const nuovoUtenteId = this.uuidGenerator.genera();
+    // deveCambiarePassword=true: la password è provvisoria, scelta
+    // dall'Admin, e il paziente dovrà sostituirla (Sezione 4.1.10)
     const nuovoUtente = new Utente(
       nuovoUtenteId,
       input.nome,
       input.cognome,
-      input.email,
+      email,
       passwordHashata,
       RuoloUtente.PAZIENTE,
+      true,
     );
 
     const nuovoPazienteId = this.uuidGenerator.genera();
@@ -68,7 +93,7 @@ export class RegistrazionePazienteUseCase {
     const nuovoLogId = this.uuidGenerator.genera();
     const auditLog = new AuditLog(
       nuovoLogId,
-      nuovoUtente.id,
+      responsabile.id,
       TipoAzione.REGISTRAZIONE_UTENTE,
       input.ipAddress,
       null,

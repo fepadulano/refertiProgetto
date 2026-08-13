@@ -7,6 +7,10 @@ import {
   CreaMedicoResponse,
   ElencoMediciResponse,
 } from "../models/medico.models";
+import {
+  CreaPazienteRequest,
+  CreaPazienteResponse,
+} from "../models/paziente.models";
 
 @Injectable({ providedIn: "root" })
 export class AdminService {
@@ -21,6 +25,17 @@ export class AdminService {
   public creaMedico(dati: CreaMedicoRequest): Observable<CreaMedicoResponse> {
     return this.http.post<CreaMedicoResponse>(
       `${environment.apiUrl}/admin/crea-medico`,
+      dati,
+    );
+  }
+
+  // RF9: l'Admin (segreteria/accettazione) crea l'account del Paziente dopo
+  // averne verificato di persona l'identità
+  public creaPaziente(
+    dati: CreaPazienteRequest,
+  ): Observable<CreaPazienteResponse> {
+    return this.http.post<CreaPazienteResponse>(
+      `${environment.apiUrl}/admin/crea-paziente`,
       dati,
     );
   }

@@ -1,3 +1,5 @@
+import request from "supertest";
+import { Express } from "express";
 import { app } from "../../src/frameworks/web/app";
 import {
   database,
@@ -59,4 +61,80 @@ export async function creaAdminDiTest(
   });
 
   return { id, email };
+}
+
+// Crea un Admin e un Medico tramite l'API (come nella realtà), e restituisce
+// entrambi i token già pronti all'uso: l'Admin serve a chi deve registrare un
+// paziente (RF9), il Medico a chi deve cercarlo o caricargli un referto.
+export async function creaMedicoConTokenDiTest(
+  app: Express,
+): Promise<{ tokenAdmin: string; token: string; email: string }> {
+  const passwordAdmin = "PasswordAdminDiTest123!";
+  const admin = await creaAdminDiTest(passwordAdmin);
+  const loginAdmin = await request(app)
+    .post("/api/auth/login")
+    .send({
+      email: admin.email,
+      password: passwordAdmin,
+      captchaToken: "test-captcha-token",
+    });
+  const tokenAdmin = loginAdmin.body.token;
+
+  const emailMedico = emailCasuale("medico");
+  const passwordMedico = "PasswordMedicoDiTest123!";
+  await request(app)
+    .post("/api/admin/crea-medico")
+    .set("Authorization", `Bearer ${tokenAdmin}`)
+    .send({
+      nome: "Medico",
+      cognome: "DiTest",
+      email: emailMedico,
+      password: passwordMedico,
+      specializzazione: "Medicina Generale",
+      numeroMatricola: `MAT${Date.now()}${Math.floor(Math.random() * 1000)}`,
+    });
+
+  const loginMedico = await request(app)
+    .post("/api/auth/login")
+    .send({
+      email: emailMedico,
+      password: passwordMedico,
+      captchaToken: "test-captcha-token",
+    });
+
+  return { tokenAdmin, token: loginMedico.body.token, email: emailMedico };
+}
+
+// RF9: crea l'account Paziente passando dall'Admin (segreteria/accettazione,
+// non più autoregistrazione), con valori di default sovrascrivibili per i
+// test che devono controllare un campo preciso.
+export async function creaPazienteDiTest(
+  app: Express,
+  tokenAdmin: string,
+  overrides: Partial<{
+    nome: string;
+    cognome: string;
+    email: string;
+    password: string;
+    codiceFiscale: string;
+    dataNascita: string;
+  }> = {},
+): Promise<{ email: string; password: string; codiceFiscale: string }> {
+  const email = overrides.email ?? emailCasuale("paziente");
+  const password = overrides.password ?? "PasswordSicura123!";
+  const codiceFiscale = overrides.codiceFiscale ?? codiceFiscaleCasuale();
+
+  await request(app)
+    .post("/api/admin/crea-paziente")
+    .set("Authorization", `Bearer ${tokenAdmin}`)
+    .send({
+      nome: overrides.nome ?? "Mario",
+      cognome: overrides.cognome ?? "Rossi",
+      email,
+      password,
+      codiceFiscale,
+      dataNascita: overrides.dataNascita ?? "1990-05-15",
+    });
+
+  return { email, password, codiceFiscale };
 }

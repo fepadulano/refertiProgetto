@@ -4,6 +4,7 @@ import {
   avviaAppPerTest,
   chiudiConnessioniDiTest,
   creaAdminDiTest,
+  creaPazienteDiTest,
   emailCasuale,
   codiceFiscaleCasuale,
 } from "./helpers";
@@ -14,7 +15,6 @@ describe("E2E - /api/admin", () => {
   let tokenPaziente: string;
 
   const passwordAdmin = "PasswordAdmin123!";
-  const passwordPaziente = "PasswordPaziente123!";
 
   beforeAll(async () => {
     app = await avviaAppPerTest();
@@ -25,18 +25,15 @@ describe("E2E - /api/admin", () => {
       .send({ email: admin.email, password: passwordAdmin, captchaToken: "test-captcha-token" });
     tokenAdmin = loginAdmin.body.token;
 
-    const emailPaziente = emailCasuale("paziente");
-    await request(app).post("/api/auth/registrazione-paziente").send({
-      nome: "Paolo",
-      cognome: "Bianchi",
-      email: emailPaziente,
-      password: passwordPaziente,
-      codiceFiscale: codiceFiscaleCasuale(),
-      dataNascita: "1980-01-01",
-    });
+    // Serve solo un token di un ruolo diverso da Admin, per il test 403
+    const paziente = await creaPazienteDiTest(app, tokenAdmin);
     const loginPaziente = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailPaziente, password: passwordPaziente, captchaToken: "test-captcha-token" });
+      .send({
+        email: paziente.email,
+        password: paziente.password,
+        captchaToken: "test-captcha-token",
+      });
     tokenPaziente = loginPaziente.body.token;
   });
 
@@ -123,5 +120,79 @@ describe("E2E - /api/admin", () => {
       .send({ email: emailMedico, password: passwordMedico, captchaToken: "test-captcha-token" });
     expect(secondoLogin.status).toBe(401);
     expect(secondoLogin.body.errore).toMatch(/disabilitat/i);
+  });
+
+  it("un admin crea l'account di un nuovo paziente (RF9)", async () => {
+    const risposta = await request(app)
+      .post("/api/admin/crea-paziente")
+      .set("Authorization", `Bearer ${tokenAdmin}`)
+      .send({
+        nome: "Luca",
+        cognome: "Verdi",
+        email: emailCasuale("paziente"),
+        password: "PasswordPaziente123!",
+        codiceFiscale: codiceFiscaleCasuale(),
+        dataNascita: "1990-05-15",
+      });
+
+    expect(risposta.status).toBe(201);
+    expect(risposta.body.pazienteId).toBeDefined();
+  });
+
+  it("rifiuta la creazione di un paziente se chi la fa non è un admin", async () => {
+    const risposta = await request(app)
+      .post("/api/admin/crea-paziente")
+      .set("Authorization", `Bearer ${tokenPaziente}`)
+      .send({
+        nome: "Luca",
+        cognome: "Verdi",
+        email: emailCasuale("paziente"),
+        password: "PasswordPaziente123!",
+        codiceFiscale: codiceFiscaleCasuale(),
+        dataNascita: "1990-05-15",
+      });
+
+    expect(risposta.status).toBe(403);
+  });
+
+  it("rifiuta la creazione di un paziente con un'email già usata", async () => {
+    const email = emailCasuale("paziente");
+    const dati = {
+      nome: "Luca",
+      cognome: "Verdi",
+      email,
+      password: "PasswordPaziente123!",
+      codiceFiscale: codiceFiscaleCasuale(),
+      dataNascita: "1990-05-15",
+    };
+
+    await request(app)
+      .post("/api/admin/crea-paziente")
+      .set("Authorization", `Bearer ${tokenAdmin}`)
+      .send(dati);
+
+    const seconda = await request(app)
+      .post("/api/admin/crea-paziente")
+      .set("Authorization", `Bearer ${tokenAdmin}`)
+      .send({ ...dati, codiceFiscale: codiceFiscaleCasuale() });
+
+    expect(seconda.status).toBe(400);
+    expect(seconda.body.errore).toMatch(/email/i);
+  });
+
+  it("rifiuta la creazione di un paziente con un'email malformata (validazione zod)", async () => {
+    const risposta = await request(app)
+      .post("/api/admin/crea-paziente")
+      .set("Authorization", `Bearer ${tokenAdmin}`)
+      .send({
+        nome: "Luca",
+        cognome: "Verdi",
+        email: "non-e-una-email",
+        password: "PasswordPaziente123!",
+        codiceFiscale: codiceFiscaleCasuale(),
+        dataNascita: "1990-05-15",
+      });
+
+    expect(risposta.status).toBe(400);
   });
 });

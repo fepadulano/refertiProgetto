@@ -1,95 +1,37 @@
 import request from "supertest";
 import { Express } from "express";
+import * as jwt from "jsonwebtoken";
 import {
   avviaAppPerTest,
   chiudiConnessioniDiTest,
-  emailCasuale,
-  codiceFiscaleCasuale,
+  creaMedicoConTokenDiTest,
+  creaPazienteDiTest,
 } from "./helpers";
 
 describe("E2E - /api/auth", () => {
   let app: Express;
+  let tokenAdmin: string;
 
   beforeAll(async () => {
     app = await avviaAppPerTest();
+    const medico = await creaMedicoConTokenDiTest(app);
+    tokenAdmin = medico.tokenAdmin;
   });
 
   afterAll(async () => {
     await chiudiConnessioniDiTest();
   });
 
-  const password = "PasswordSicura123!";
-
-  it("registra un nuovo paziente", async () => {
-    const email = emailCasuale("paziente");
-
-    const risposta = await request(app)
-      .post("/api/auth/registrazione-paziente")
-      .send({
-        nome: "Mario",
-        cognome: "Rossi",
-        email,
-        password,
-        codiceFiscale: codiceFiscaleCasuale(),
-        dataNascita: "1990-05-15",
-      });
-
-    expect(risposta.status).toBe(201);
-    expect(risposta.body.utenteId).toBeDefined();
-  });
-
-  it("rifiuta una seconda registrazione con la stessa email", async () => {
-    const email = emailCasuale("paziente");
-    const datiRegistrazione = {
-      nome: "Mario",
-      cognome: "Rossi",
-      email,
-      password,
-      codiceFiscale: codiceFiscaleCasuale(),
-      dataNascita: "1990-05-15",
-    };
-
-    await request(app)
-      .post("/api/auth/registrazione-paziente")
-      .send(datiRegistrazione);
-
-    const seconda = await request(app)
-      .post("/api/auth/registrazione-paziente")
-      .send({ ...datiRegistrazione, codiceFiscale: codiceFiscaleCasuale() });
-
-    expect(seconda.status).toBe(400);
-    expect(seconda.body.errore).toMatch(/email/i);
-  });
-
-  it("rifiuta la registrazione con un'email malformata (validazione zod)", async () => {
-    const risposta = await request(app)
-      .post("/api/auth/registrazione-paziente")
-      .send({
-        nome: "Mario",
-        cognome: "Rossi",
-        email: "non-e-una-email",
-        password,
-        codiceFiscale: codiceFiscaleCasuale(),
-        dataNascita: "1990-05-15",
-      });
-
-    expect(risposta.status).toBe(400);
-  });
-
   it("effettua il login con credenziali corrette e restituisce un token e un refresh token", async () => {
-    const email = emailCasuale("paziente");
-    await request(app).post("/api/auth/registrazione-paziente").send({
-      nome: "Mario",
-      cognome: "Rossi",
-      email,
-      password,
-      codiceFiscale: codiceFiscaleCasuale(),
-      dataNascita: "1990-05-15",
-    });
+    const paziente = await creaPazienteDiTest(app, tokenAdmin);
 
     const risposta = await request(app)
       .post("/api/auth/login")
-      .send({ email, password, captchaToken: "test-captcha-token" });
+      .send({
+        email: paziente.email,
+        password: paziente.password,
+        captchaToken: "test-captcha-token",
+      });
 
     expect(risposta.status).toBe(200);
     expect(typeof risposta.body.token).toBe("string");
@@ -97,54 +39,38 @@ describe("E2E - /api/auth", () => {
   });
 
   it("rifiuta il login senza il token captcha", async () => {
-    const email = emailCasuale("paziente");
-    await request(app).post("/api/auth/registrazione-paziente").send({
-      nome: "Mario",
-      cognome: "Rossi",
-      email,
-      password,
-      codiceFiscale: codiceFiscaleCasuale(),
-      dataNascita: "1990-05-15",
-    });
+    const paziente = await creaPazienteDiTest(app, tokenAdmin);
 
     const risposta = await request(app)
       .post("/api/auth/login")
-      .send({ email, password });
+      .send({ email: paziente.email, password: paziente.password });
 
     expect(risposta.status).toBe(400);
   });
 
   it("rifiuta il login con la password sbagliata", async () => {
-    const email = emailCasuale("paziente");
-    await request(app).post("/api/auth/registrazione-paziente").send({
-      nome: "Mario",
-      cognome: "Rossi",
-      email,
-      password,
-      codiceFiscale: codiceFiscaleCasuale(),
-      dataNascita: "1990-05-15",
-    });
+    const paziente = await creaPazienteDiTest(app, tokenAdmin);
 
     const risposta = await request(app)
       .post("/api/auth/login")
-      .send({ email, password: "PasswordSbagliata1!", captchaToken: "test-captcha-token" });
+      .send({
+        email: paziente.email,
+        password: "PasswordSbagliata1!",
+        captchaToken: "test-captcha-token",
+      });
 
     expect(risposta.status).toBe(401);
   });
 
   it("con un refresh token valido ottiene un nuovo access token, utilizzabile su una rotta protetta", async () => {
-    const email = emailCasuale("paziente");
-    await request(app).post("/api/auth/registrazione-paziente").send({
-      nome: "Mario",
-      cognome: "Rossi",
-      email,
-      password,
-      codiceFiscale: codiceFiscaleCasuale(),
-      dataNascita: "1990-05-15",
-    });
+    const paziente = await creaPazienteDiTest(app, tokenAdmin);
     const login = await request(app)
       .post("/api/auth/login")
-      .send({ email, password, captchaToken: "test-captcha-token" });
+      .send({
+        email: paziente.email,
+        password: paziente.password,
+        captchaToken: "test-captcha-token",
+      });
 
     const refresh = await request(app)
       .post("/api/auth/refresh")
@@ -172,5 +98,93 @@ describe("E2E - /api/auth", () => {
     const risposta = await request(app).post("/api/auth/refresh").send({});
 
     expect(risposta.status).toBe(400);
+  });
+
+  it("un account appena creato ha deveCambiarePassword=true nel token", async () => {
+    const paziente = await creaPazienteDiTest(app, tokenAdmin);
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({
+        email: paziente.email,
+        password: paziente.password,
+        captchaToken: "test-captcha-token",
+      });
+
+    const payload = jwt.decode(login.body.token) as { deveCambiarePassword: boolean };
+    expect(payload.deveCambiarePassword).toBe(true);
+  });
+
+  it("cambia la password e restituisce un token con deveCambiarePassword=false", async () => {
+    const paziente = await creaPazienteDiTest(app, tokenAdmin);
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({
+        email: paziente.email,
+        password: paziente.password,
+        captchaToken: "test-captcha-token",
+      });
+
+    const cambio = await request(app)
+      .post("/api/auth/cambia-password")
+      .set("Authorization", `Bearer ${login.body.token}`)
+      .send({
+        passwordAttuale: paziente.password,
+        nuovaPassword: "PasswordNuovaScelta1!",
+      });
+
+    expect(cambio.status).toBe(200);
+    const payload = jwt.decode(cambio.body.token) as { deveCambiarePassword: boolean };
+    expect(payload.deveCambiarePassword).toBe(false);
+
+    // la vecchia password non funziona più, la nuova sì
+    const loginVecchia = await request(app)
+      .post("/api/auth/login")
+      .send({
+        email: paziente.email,
+        password: paziente.password,
+        captchaToken: "test-captcha-token",
+      });
+    expect(loginVecchia.status).toBe(401);
+
+    const loginNuova = await request(app)
+      .post("/api/auth/login")
+      .send({
+        email: paziente.email,
+        password: "PasswordNuovaScelta1!",
+        captchaToken: "test-captcha-token",
+      });
+    expect(loginNuova.status).toBe(200);
+  });
+
+  it("rifiuta il cambio password se la password attuale è sbagliata", async () => {
+    const paziente = await creaPazienteDiTest(app, tokenAdmin);
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({
+        email: paziente.email,
+        password: paziente.password,
+        captchaToken: "test-captcha-token",
+      });
+
+    const cambio = await request(app)
+      .post("/api/auth/cambia-password")
+      .set("Authorization", `Bearer ${login.body.token}`)
+      .send({
+        passwordAttuale: "PasswordSbagliata1!",
+        nuovaPassword: "PasswordNuovaScelta1!",
+      });
+
+    expect(cambio.status).toBe(400);
+  });
+
+  it("rifiuta il cambio password senza autenticazione", async () => {
+    const risposta = await request(app)
+      .post("/api/auth/cambia-password")
+      .send({
+        passwordAttuale: "qualsiasi",
+        nuovaPassword: "PasswordNuovaScelta1!",
+      });
+
+    expect(risposta.status).toBe(401);
   });
 });

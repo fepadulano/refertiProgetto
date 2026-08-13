@@ -9,7 +9,9 @@ import { IUtenteRepository, Transazione } from "../../use_cases/ports";
 
 export class UtenteRepository implements IUtenteRepository {
   public async esisteEmail(email: string): Promise<boolean> {
-    const count = await UtenteModel.count({ where: { email } });
+    const count = await UtenteModel.count({
+      where: { email: email.toLowerCase() },
+    });
     return count > 0;
   }
 
@@ -23,6 +25,7 @@ export class UtenteRepository implements IUtenteRepository {
         passwordHash: utente.passwordHash,
         ruolo: utente.ruolo,
         attivo: utente.attivo,
+        deveCambiarePassword: utente.deveCambiarePassword,
       },
       { transaction: transazione as Transaction | undefined },
     );
@@ -33,7 +36,11 @@ export class UtenteRepository implements IUtenteRepository {
     transazione?: Transazione,
   ): Promise<void> {
     await UtenteModel.update(
-      { attivo: utente.attivo },
+      {
+        attivo: utente.attivo,
+        passwordHash: utente.passwordHash,
+        deveCambiarePassword: utente.deveCambiarePassword,
+      },
       {
         where: { id: utente.id },
         transaction: transazione as Transaction | undefined,
@@ -55,12 +62,16 @@ export class UtenteRepository implements IUtenteRepository {
       utenteDb.email as string,
       utenteDb.passwordHash as string,
       utenteDb.ruolo as RuoloUtente,
+      utenteDb.deveCambiarePassword as boolean,
       utenteDb.attivo as boolean,
+      utenteDb.createdAt as Date,
     );
   }
 
   public async findByEmail(email: string): Promise<Utente | null> {
-    const utenteDb = await UtenteModel.findOne({ where: { email } });
+    const utenteDb = await UtenteModel.findOne({
+      where: { email: email.toLowerCase() },
+    });
     if (!utenteDb) return null;
 
     return new Utente(
@@ -70,7 +81,9 @@ export class UtenteRepository implements IUtenteRepository {
       utenteDb.email as string,
       utenteDb.passwordHash as string,
       utenteDb.ruolo as RuoloUtente,
+      utenteDb.deveCambiarePassword as boolean,
       utenteDb.attivo as boolean,
+      utenteDb.createdAt as Date,
     );
   }
 
@@ -132,7 +145,9 @@ export class UtenteRepository implements IUtenteRepository {
         utenteDb.email as string,
         utenteDb.passwordHash as string,
         utenteDb.ruolo as RuoloUtente,
+        utenteDb.deveCambiarePassword as boolean,
         utenteDb.attivo as boolean,
+        utenteDb.createdAt as Date,
       );
 
       const medicoDb = mediciDb.find((m) => m.utenteId === utenteDb.id);

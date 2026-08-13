@@ -4,11 +4,11 @@ import { Observable, tap } from "rxjs";
 import { jwtDecode } from "jwt-decode";
 import { environment } from "../../../environments/environment";
 import {
+  CambiaPasswordRequest,
+  CambiaPasswordResponse,
   LoginRequest,
   LoginResponse,
   RefreshResponse,
-  RegistrazioneRequest,
-  RegistrazioneResponse,
   UtenteAutenticato,
 } from "../models/auth.models";
 
@@ -41,13 +41,18 @@ export class AuthService {
       .pipe(tap((risposta) => this.salvaToken(risposta.token)));
   }
 
-  public registrazione(
-    dati: RegistrazioneRequest,
-  ): Observable<RegistrazioneResponse> {
-    return this.http.post<RegistrazioneResponse>(
-      `${environment.apiUrl}/auth/registrazione-paziente`,
-      dati,
-    );
+  // RF2/RF9: sostituisce la password provvisoria data dall'Admin con una
+  // scelta dal titolare dell'account (Sezione 4.1.10). Il backend restituisce
+  // un token nuovo, già senza il flag deveCambiarePassword.
+  public cambiaPassword(
+    dati: CambiaPasswordRequest,
+  ): Observable<CambiaPasswordResponse> {
+    return this.http
+      .post<CambiaPasswordResponse>(
+        `${environment.apiUrl}/auth/cambia-password`,
+        dati,
+      )
+      .pipe(tap((risposta) => this.salvaToken(risposta.token)));
   }
 
   public logout(): void {

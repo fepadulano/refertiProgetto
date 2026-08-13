@@ -24,13 +24,13 @@ test("un medico carica un referto e il paziente lo vede arrivare in tempo reale"
     cognome: "Neri",
     password: "PasswordMedico123!",
   });
-  const paziente = await registraPaziente(request, {
+  const tokenMedico = await login(request, medico.email, "PasswordMedico123!");
+  const paziente = await registraPaziente(request, tokenAdmin, {
     nome: "Mario",
     cognome: "Rossi",
     password: "PasswordSicura123!",
   });
 
-  const tokenMedico = await login(request, medico.email, "PasswordMedico123!");
   const tokenPaziente = await login(request, paziente.email, "PasswordSicura123!");
 
   const contestoMedico = await browser.newContext();

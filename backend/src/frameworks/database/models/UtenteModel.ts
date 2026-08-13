@@ -9,6 +9,8 @@ export class UtenteModel extends Model {
   declare passwordHash: string;
   declare ruolo: string;
   declare attivo: boolean;
+  declare deveCambiarePassword: boolean;
+  declare createdAt: Date;
 }
 
 UtenteModel.init(
@@ -23,6 +25,7 @@ UtenteModel.init(
     passwordHash: { type: DataTypes.STRING, allowNull: false },
     ruolo: { type: DataTypes.STRING, allowNull: false },
     attivo: { type: DataTypes.BOOLEAN, defaultValue: true },
+    deveCambiarePassword: { type: DataTypes.BOOLEAN, defaultValue: false },
   },
   {
     sequelize: database,

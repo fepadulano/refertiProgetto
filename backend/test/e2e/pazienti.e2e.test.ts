@@ -3,9 +3,8 @@ import { Express } from "express";
 import {
   avviaAppPerTest,
   chiudiConnessioniDiTest,
-  creaAdminDiTest,
-  emailCasuale,
-  codiceFiscaleCasuale,
+  creaMedicoConTokenDiTest,
+  creaPazienteDiTest,
 } from "./helpers";
 
 const pdfFinto = Buffer.from("%PDF-1.4 contenuto finto per i test");
@@ -21,44 +20,21 @@ describe("E2E - /api/pazienti", () => {
   beforeAll(async () => {
     app = await avviaAppPerTest();
 
-    const admin = await creaAdminDiTest("PasswordAdmin123!");
-    const loginAdmin = await request(app)
-      .post("/api/auth/login")
-      .send({ email: admin.email, password: "PasswordAdmin123!", captchaToken: "test-captcha-token" });
-    const tokenAdmin = loginAdmin.body.token;
+    const medico = await creaMedicoConTokenDiTest(app);
+    tokenMedico = medico.token;
 
-    const emailMedico = emailCasuale("medico");
-    const passwordMedico = "PasswordMedico123!";
-    await request(app)
-      .post("/api/admin/crea-medico")
-      .set("Authorization", `Bearer ${tokenAdmin}`)
-      .send({
-        nome: "Anna",
-        cognome: "Neri",
-        email: emailMedico,
-        password: passwordMedico,
-        specializzazione: "Radiologia",
-        numeroMatricola: `MAT${Date.now()}`,
-      });
-    const loginMedico = await request(app)
-      .post("/api/auth/login")
-      .send({ email: emailMedico, password: passwordMedico, captchaToken: "test-captcha-token" });
-    tokenMedico = loginMedico.body.token;
-
-    codiceFiscale = codiceFiscaleCasuale();
-    const passwordPaziente = "PasswordPaziente123!";
-    const emailPaziente = emailCasuale("paziente");
-    await request(app).post("/api/auth/registrazione-paziente").send({
+    const paziente = await creaPazienteDiTest(app, medico.tokenAdmin, {
       nome: "Paolo",
       cognome: "Bianchi",
-      email: emailPaziente,
-      password: passwordPaziente,
-      codiceFiscale,
-      dataNascita: "1985-03-20",
     });
+    codiceFiscale = paziente.codiceFiscale;
     const loginPaziente = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailPaziente, password: passwordPaziente, captchaToken: "test-captcha-token" });
+      .send({
+        email: paziente.email,
+        password: paziente.password,
+        captchaToken: "test-captcha-token",
+      });
     tokenPaziente = loginPaziente.body.token;
 
     const ricerca = await request(app)
@@ -68,19 +44,17 @@ describe("E2E - /api/pazienti", () => {
     pazienteId = ricerca.body.pazienteId;
 
     // Un secondo paziente, per verificare che non veda lo storico altrui
-    const emailAltroPaziente = emailCasuale("paziente");
-    const passwordAltroPaziente = "PasswordPaziente123!";
-    await request(app).post("/api/auth/registrazione-paziente").send({
+    const altroPaziente = await creaPazienteDiTest(app, medico.tokenAdmin, {
       nome: "Sara",
       cognome: "Gialli",
-      email: emailAltroPaziente,
-      password: passwordAltroPaziente,
-      codiceFiscale: codiceFiscaleCasuale(),
-      dataNascita: "1992-07-10",
     });
     const loginAltroPaziente = await request(app)
       .post("/api/auth/login")
-      .send({ email: emailAltroPaziente, password: passwordAltroPaziente, captchaToken: "test-captcha-token" });
+      .send({
+        email: altroPaziente.email,
+        password: altroPaziente.password,
+        captchaToken: "test-captcha-token",
+      });
     tokenAltroPaziente = loginAltroPaziente.body.token;
 
     // Due referti associati al primo paziente, di categorie diverse

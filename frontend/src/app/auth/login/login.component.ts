@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificaService } from '../../core/services/notifica.service';
 import { environment } from '../../../environments/environment';
@@ -21,7 +21,7 @@ declare const grecaptcha: {
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })

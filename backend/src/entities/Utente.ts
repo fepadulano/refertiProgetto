@@ -17,11 +17,17 @@ export class Utente {
     public email: string,
     public passwordHash: string,
     public ruolo: RuoloUtente,
+    public deveCambiarePassword: boolean = false,
     public attivo: boolean = true,
     public readonly createdAt: Date = new Date(), // Aggiunto in base allo schema
   ) {}
 
   public disabilitaAccount(): void {
     this.attivo = false;
+  }
+
+  public completaCambioPassword(nuovoHash: string): void {
+    this.passwordHash = nuovoHash;
+    this.deveCambiarePassword = false;
   }
 }

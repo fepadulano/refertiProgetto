@@ -3,7 +3,10 @@ import { AdminController } from "../../../adapters/controllers/AdminController";
 import { container } from "tsyringe";
 import { abilitaProtezioneJwt } from "../middlewares/auth.middleware";
 import { validaBody } from "../middlewares/validate.middleware";
-import { creaMedicoSchema } from "../../../adapters/validators/adminValidators";
+import {
+  creaMedicoSchema,
+  creaPazienteSchema,
+} from "../../../adapters/validators/adminValidators";
 
 export const adminRouter = Router();
 
@@ -14,6 +17,14 @@ adminRouter.post(
   abilitaProtezioneJwt,
   validaBody(creaMedicoSchema),
   adminController.creaMedico,
+);
+
+// RF9: solo l'Admin (segreteria/accettazione) crea l'account di un paziente
+adminRouter.post(
+  "/crea-paziente",
+  abilitaProtezioneJwt,
+  validaBody(creaPazienteSchema),
+  adminController.creaPaziente,
 );
 
 adminRouter.post(
