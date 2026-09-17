@@ -1,0 +1,40 @@
+.notifiche-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1080;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.notifica {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.notifica-successo {
+  background-color: #198754;
+}
+
+.notifica-errore {
+  background-color: #dc3545;
+}
+
+.notifica-testo {
+  flex: 1;
+}
+
+.notifica-chiudi {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}

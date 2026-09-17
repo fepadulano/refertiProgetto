@@ -113,7 +113,7 @@ describe("E2E - /api/pazienti", () => {
 
   it("il paziente vede il proprio storico referti, dal più recente (RF5)", async () => {
     const risposta = await request(app)
-      .get(`/api/pazienti/${pazienteId}/referti`)
+      .get("/api/pazienti/me/referti")
       .set("Authorization", `Bearer ${tokenPaziente}`);
 
     expect(risposta.status).toBe(200);
@@ -124,7 +124,7 @@ describe("E2E - /api/pazienti", () => {
 
   it("filtra lo storico per categoria (RF7)", async () => {
     const risposta = await request(app)
-      .get(`/api/pazienti/${pazienteId}/referti`)
+      .get("/api/pazienti/me/referti")
       .query({ categoria: "Radiologia" })
       .set("Authorization", `Bearer ${tokenPaziente}`);
 
@@ -136,11 +136,12 @@ describe("E2E - /api/pazienti", () => {
     ).toBe(true);
   });
 
-  it("un paziente non può vedere lo storico di un altro paziente", async () => {
+  it("un paziente vede solo il proprio storico, mai quello di un altro paziente", async () => {
     const risposta = await request(app)
-      .get(`/api/pazienti/${pazienteId}/referti`)
+      .get("/api/pazienti/me/referti")
       .set("Authorization", `Bearer ${tokenAltroPaziente}`);
 
-    expect(risposta.status).toBe(403);
+    expect(risposta.status).toBe(200);
+    expect(risposta.body.referti).toHaveLength(0);
   });
 });

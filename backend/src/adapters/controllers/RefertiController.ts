@@ -8,6 +8,8 @@ import { gestisciErroreHttp } from "./gestisciErroreHttp";
 import { cifraBuffer, decifraBuffer } from "../../frameworks/security/CifratoreFile";
 import { notificaPaziente } from "../../frameworks/web/socket";
 import { IFileStorage } from "../../use_cases/ports";
+import { RuoloUtente } from "../../entities/Utente";
+import { ErroreAutorizzazione } from "../../use_cases/erroriDominio";
 
 // il mimetype dichiarato dal client (controllato da multer) si può falsificare
 // facilmente: controlliamo anche l'intestazione reale del file
@@ -27,6 +29,16 @@ export class RefertiController {
     try {
       const utenteId = req.user?.id;
       if (!utenteId) throw new Error("Utente non autenticato");
+
+      // controllo economico basato sul ruolo già nel token: evita di cifrare
+      // e scrivere su disco un file che tanto lo Use Case rifiuterebbe dopo.
+      // Resta comunque lo Use Case l'autorità finale (controlla anche che
+      // esista un profiloMedico associato, cosa che il solo JWT non garantisce).
+      if (req.user?.ruolo !== RuoloUtente.MEDICO) {
+        throw new ErroreAutorizzazione(
+          "Accesso negato: solo i medici registrati possono caricare referti",
+        );
+      }
 
       if (!req.file) {
         res.status(400).json({ errore: "Il file PDF è obbligatorio." });

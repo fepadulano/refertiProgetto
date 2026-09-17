@@ -11,7 +11,7 @@ export interface StoricoRefertiPropriInput {
   dataFine?: Date;
 }
 
-// a differenza di ConsultazioneStoricoUseCase, qui il pazienteId si ricava dal token
+// il pazienteId non arriva dall'esterno: si ricava sempre dal token di chi chiama
 @injectable()
 export class StoricoRefertiPropriUseCase {
   constructor(

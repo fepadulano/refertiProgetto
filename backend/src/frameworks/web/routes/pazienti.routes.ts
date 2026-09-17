@@ -20,18 +20,10 @@ pazientiRouter.get(
   pazientiController.cerca,
 );
 
-// deve stare prima di "/:id/referti", altrimenti Express interpreta "me" come :id
+// GET /api/pazienti/me/referti?categoria=...&dataInizio=...&dataFine=... (RF5/RF7)
 pazientiRouter.get(
   "/me/referti",
   abilitaProtezioneJwt,
   validaQuery(listaRefertiQuerySchema),
   pazientiController.ilMioStorico,
-);
-
-// GET /api/pazienti/:id/referti?categoria=...&dataInizio=...&dataFine=... (RF5/RF7)
-pazientiRouter.get(
-  "/:id/referti",
-  abilitaProtezioneJwt,
-  validaQuery(listaRefertiQuerySchema),
-  pazientiController.listaReferti,
 );
