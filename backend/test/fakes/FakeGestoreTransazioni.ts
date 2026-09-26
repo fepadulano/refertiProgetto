@@ -5,9 +5,9 @@ import { IGestoreTransazioni, Transazione } from "../../src/use_cases/ports";
 // basta eseguire l'operazione ricevuta con un valore fittizio al posto
 // del token di transazione vero.
 export class FakeGestoreTransazioni implements IGestoreTransazioni {
-  public async esegui<T>(
-    operazione: (transazione: Transazione) => Promise<T>,
-  ): Promise<T> {
+  public async esegui(
+    operazione: (transazione: Transazione) => Promise<void>,
+  ): Promise<void> {
     return operazione(undefined);
   }
 }
